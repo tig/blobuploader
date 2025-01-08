@@ -1,0 +1,3 @@
+tig_blobuploader_controller:
+    path: /demo/{name}
+    defaults: { _controller: tig.blobuploader.controller.main:handle }
