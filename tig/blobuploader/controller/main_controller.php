@@ -44,7 +44,7 @@ class main_controller
 	}
 
 	/**
-	 * Controller handler for route /demo/{name}
+	 * Controller handler for route /uploader/{name}
 	 *
 	 * @param string $name
 	 *

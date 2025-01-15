@@ -46,7 +46,7 @@ $lang = array_merge($lang, [
 
 	'TIG_BLOBUPLOADER_NOTIFICATION'	=> 'Blob Uploader notification',
 
-	'BLOBUPLOADER_PAGE'			=> 'Blobuploader Page',
+	'BLOBUPLOADER_PAGE'			=> 'Upload',
 	'VIEWING_TIG_BLOBUPLOADER'			=> 'Viewing Blob Uploader page',
 
 ]);
