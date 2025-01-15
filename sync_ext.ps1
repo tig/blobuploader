@@ -1,9 +1,10 @@
 # Define source and target directories
-$SourceDir = "/home/tig/s/blobuploader/tig/"
+$SourceDir = "./tig/blobuploader/"
 $TargetDir = "/var/www/html/phpbb/ext/tig/"
 
 # Rsync options
-$RsyncOptions = "-av --delete"
+#$RsyncOptions = "-av --delete"
+$RsyncOptions = "-av --ignore-existing --no-perms --no-owner --no-group"
 
 # Run rsync with sudo
 Write-Output "Starting sync from $SourceDir to $TargetDir..."
