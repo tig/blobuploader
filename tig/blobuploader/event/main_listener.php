@@ -20,15 +20,11 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
  */
 class main_listener implements EventSubscriberInterface
 {
-	public static function getSubscribedEvents()
-	{
-		return [
-			'core.user_setup'							=> 'load_language_on_setup',
-			'core.page_header'							=> 'add_page_header_link',
-			'core.viewonline_overwrite_location'		=> 'viewonline_page',
-	'core.display_forums_modify_template_vars'	=> 'display_forums_modify_template_vars',
-		];
-	}
+	/** @var config */
+	protected $config;
+
+	/** @var db_text */
+	protected $config_text;
 
 	/* @var \phpbb\language\language */
 	protected $language;
@@ -50,13 +46,48 @@ class main_listener implements EventSubscriberInterface
 	 * @param \phpbb\template\template	$template	Template object
 	 * @param string                    $php_ext    phpEx
 	 */
-	public function __construct(\phpbb\language\language $language, \phpbb\controller\helper $helper, \phpbb\template\template $template, $php_ext)
+	public function __construct(
+        \phpbb\config\config $config,
+        $config_text,	
+		\phpbb\language\language $language, 
+		\phpbb\controller\helper $helper, 
+		\phpbb\template\template $template, 
+		$php_ext
+		)
 	{
 		$this->language = $language;
+        $this->config = $config;
+        $this->config_text = $config_text;
 		$this->helper   = $helper;
 		$this->template = $template;
 		$this->php_ext  = $php_ext;
+
+		//error_log('main_listener.php: __construct()');
 	}
+
+	public static function getSubscribedEvents()
+	{
+		return [
+			'core.user_setup'  => 'load_language_on_setup',
+			'core.page_header' => 'on_page_header',
+		];
+	}
+
+    /**
+     * Event handler for the core.page_header event.
+     *
+     * @param \phpbb\event\data $event The event object
+     */
+    public function on_page_header($event)
+    {
+        // Retrieve the explain text from config_text
+        $explain_text = $this->config_text->get('tig_blobuploader_explain_text', '');
+
+        // Assign the explain text to the template
+        $this->template->assign_vars([
+            'EXPLAIN_TEXT' => $explain_text,
+        ]);
+    }
 
 	/**
 	 * Load common language files during user setup
@@ -65,48 +96,13 @@ class main_listener implements EventSubscriberInterface
 	 */
 	public function load_language_on_setup($event)
 	{
+		//error_log('main_listener.php: load_language_on_setup()');
 		$lang_set_ext = $event['lang_set_ext'];
 		$lang_set_ext[] = [
 			'ext_name' => 'tig/blobuploader',
 			'lang_set' => 'common',
 		];
 		$event['lang_set_ext'] = $lang_set_ext;
-	}
 
-	/**
-	 * Add a link to the controller in the forum navbar
-	 */
-	public function add_page_header_link()
-	{
-		$this->template->assign_vars([
-			'U_BLOBUPLOADER_PAGE'	=> $this->helper->route('tig_blobuploader_controller', ['name' => 'world']),
-		]);
-	}
-
-	/**
-	 * Show users viewing Blob Uploader page on the Who Is Online page
-	 *
-	 * @param \phpbb\event\data	$event	Event object
-	 */
-	public function viewonline_page($event)
-	{
-		if ($event['on_page'][1] === 'app' && strrpos($event['row']['session_page'], 'app.' . $this->php_ext . '/demo') === 0)
-		{
-			$event['location'] = $this->language->lang('VIEWING_TIG_BLOBUPLOADER');
-			$event['location_url'] = $this->helper->route('tig_blobuploader_controller', ['name' => 'world']);
-		}
-	}
-
-	/**
-	 * A sample PHP event
-	 * Modifies the names of the forums on index
-	 *
-	 * @param \phpbb\event\data	$event	Event object
-	 */
-	public function display_forums_modify_template_vars($event)
-	{
-		$forum_row = $event['forum_row'];
-		$forum_row['FORUM_NAME'] .= $this->language->lang('BLOBUPLOADER_EVENT');
-		$event['forum_row'] = $forum_row;
 	}
 }

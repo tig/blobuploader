@@ -3,28 +3,73 @@
 <h1>{{ lang('ACP_BLOBUPLOADER_TITLE') }}</h1>
 
 {% if S_ERROR %}
-	<div class="errorbox">
-		<h3>{{ lang('WARNING') }}</h3>
-		<p>{{ ERROR_MSG }}</p>
-	</div>
+    <div class="errorbox">
+        <h3>{{ lang('WARNING') }}</h3>
+        <p>{{ ERROR_MSG }}</p>
+    </div>
 {% endif %}
 
 <form id="tig_blobuploader_acp" name="tig_blobuploader_acp" method="post" action="{{ U_ACTION }}">
 
-	<fieldset>
-		<legend>{{ lang('SETTINGS') }}</legend>
-		<dl>
-			<dt><label for="tig_blobuploader_goodbye">{{ lang('ACP_BLOBUPLOADER_GOODBYE') ~ lang('COLON') }}</label></dt>
-			<dd><label><input type="radio" class="radio" name="tig_blobuploader_goodbye" value="1"{% if TIG_BLOBUPLOADER_GOODBYE %} checked="checked"{% endif %} /> {{ lang('YES') }}</label>
-				<label><input type="radio" class="radio" name="tig_blobuploader_goodbye" value="0"{% if not TIG_BLOBUPLOADER_GOODBYE %} checked="checked"{% endif %} /> {{ lang('NO') }}</label></dd>
-		</dl>
-	</fieldset>
+    <fieldset>
+        <legend>{{ lang('SETTINGS') }}</legend>
 
-	<fieldset class="submit-buttons">
-		<input class="button1" type="submit" id="submit" name="submit" value="{{ lang('SUBMIT') }}" />&nbsp;
-		<input class="button2" type="submit" id="preview" name="preview" value="{{ lang('PREVIEW') }}" />
-		{{ S_FORM_TOKEN }}
-	</fieldset>
+        <dl>
+            <dt><label for="blob_mount_directory">{{ lang('ACP_BLOBUPLOADER_EXPLAIN_TEXT') }}{{ lang('COLON') }}</label><br /><span>{{ lang('ACP_BLOBUPLOADER_EXPLAIN_TEXT_EXPLAIN') }}</span></dt>
+            <dd><textarea type="text" id="explain_text" name="explain_text" value="{{ EXPLAIN_TEXT }}" style="width: 100%; height: 3em;">{{ EXPLAIN_TEXT }}</textarea></dd>
+        </dl>
+
+        <dl>
+            <dt><label for="blob_mount_directory">{{ lang('ACP_BLOBUPLOADER_BLOB_MOUNT_DIRECTORY') }}{{ lang('COLON') }}</label><br /><span>{{ lang('ACP_BLOBUPLOADER_BLOB_MOUNT_DIRECTORY_EXPLAIN') }}</span></dt>
+            <dd><input type="text" id="blob_mount_directory" name="blob_mount_directory" value="{{ BLOB_MOUNT_DIRECTORY }}" maxlength="255" style="width: 100%;" /></dd>
+        </dl>
+
+        <dl>
+            <dt><label for="blob_url_base">{{ lang('ACP_BLOBUPLOADER_URL_BASE') }}{{ lang('COLON') }}</label><br /><span>{{ lang('ACP_BLOBUPLOADER_URL_BASE_EXPLAIN') }}</span></dt>
+            <dd><input type="text" id="url_base" name="url_base" value="{{ URL_BASE }}" maxlength="255" style="width: 100%;" /></dd>
+        </dl>
+
+        <dl>
+            <dt><label for="allowed_extensions">{{ lang('ACP_BLOBUPLOADER_ALLOWED_EXTENSIONS') }}{{ lang('COLON') }}</label><br /><span>{{ lang('ACP_BLOBUPLOADER_ALLOWED_EXTENSIONS_EXPLAIN') }}</span></dt>
+            <dd><input type="text" id="allowed_extensions" name="allowed_extensions" value="{{ ALLOWED_EXTENSIONS }}" maxlength="255" style="width: 100%;"/></dd>
+        </dl>
+
+        <dl>
+            <dt><label>{{ lang('ACP_BLOBUPLOADER_MAX_ORIGINAL_SIZE') }}{{ lang('COLON') }}</label><br /><span>{{ lang('ACP_BLOBUPLOADER_MAX_ORIGINAL_SIZE_EXPLAIN') }}</span></dt>
+            <dd>
+                <label for="max_original_width">{{ lang('ACP_BLOBUPLOADER_WIDTH') }}{{ lang('COLON') }}</label>
+                <input type="number" id="max_original_width" name="max_original_width" value="{{ MAX_ORIGINAL_WIDTH }}" />
+                <label for="max_original_height">{{ lang('ACP_BLOBUPLOADER_HEIGHT') }}{{ lang('COLON') }}</label>
+                <input type="number" id="max_original_height" name="max_original_height" value="{{ MAX_ORIGINAL_HEIGHT }}" />
+            </dd>
+        </dl>
+
+        <dl>
+            <dt><label>{{ lang('ACP_BLOBUPLOADER_SIZED_SIZE') }}{{ lang('COLON') }}</label><br /><span>{{ lang('ACP_BLOBUPLOADER_SIZED_SIZE_EXPLAIN') }}</span></dt>
+            <dd>
+                <label for="sized_width">{{ lang('ACP_BLOBUPLOADER_WIDTH') }}{{ lang('COLON') }}</label>
+                <input type="number" id="sized_width" name="sized_width" value="{{ SIZED_WIDTH }}" />
+                <label for="sized_height">{{ lang('ACP_BLOBUPLOADER_HEIGHT') }}{{ lang('COLON') }}</label>
+                <input type="number" id="sized_height" name="sized_height" value="{{ SIZED_HEIGHT }}" />
+            </dd>
+        </dl>
+
+        <dl>
+            <dt><label>{{ lang('ACP_BLOBUPLOADER_THUMBNAIL_SIZE') }}{{ lang('COLON') }}</label><br /><span>{{ lang('ACP_BLOBUPLOADER_THUMBNAIL_SIZE_EXPLAIN') }}</span></dt>
+            <dd>
+                <label for="thumbnail_width">{{ lang('ACP_BLOBUPLOADER_WIDTH') }}{{ lang('COLON') }}</label>
+                <input type="number" id="thumbnail_width" name="thumbnail_width" value="{{ THUMBNAIL_WIDTH }}" />
+                <label for="thumbnail_height">{{ lang('ACP_BLOBUPLOADER_HEIGHT') }}{{ lang('COLON') }}</label>
+                <input type="number" id="thumbnail_height" name="thumbnail_height" value="{{ THUMBNAIL_HEIGHT }}" />
+            </dd>
+        </dl>
+    </fieldset>
+
+    <fieldset class="submit-buttons">
+        <input class="button1" type="submit" id="submit" name="submit" value="{{ lang('SUBMIT') }}" />&nbsp;
+        <input class="button2" type="submit" id="preview" name="preview" value="{{ lang('PREVIEW') }}" />
+        {{ S_FORM_TOKEN }}
+    </fieldset>
 
 </form>
 

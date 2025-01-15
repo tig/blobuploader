@@ -17,6 +17,8 @@ class main_info
 {
 	public function module()
 	{
+		//error_log('main_info.php: module()');
+
 		return [
 			'filename'	=> '\tig\blobuploader\acp\main_module',
 			'title'		=> 'ACP_BLOBUPLOADER_TITLE',

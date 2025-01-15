@@ -1,0 +1,299 @@
+<style>
+    .panel p {
+        font-size: inherit;
+    }
+    
+    .fields2 {
+        box-sizing: border-box;
+    }
+    
+    .box-container {
+        display: flex; /* Align items in a row */
+        align-items: center; /* Vertically center items */
+        margin-bottom: 5px;
+        max-width: 100%; /* Ensure the container respects the fieldset's width */
+        box-sizing: border-box;
+    }
+    
+    .box {
+        font-size: inherit;
+        font-family: inherit;
+        border: 1px solid #ccc;
+        padding: 5px;
+        margin-right: 5px; /* Space between the box and the button */
+        margin-left: 5px; /* Space between the box and the button */
+        max-width: 100%; /* Restrict the width to the parent container */
+        word-wrap: break-word; /* Break long words */
+        overflow-wrap: break-word;
+        white-space: normal; /* Allow text to wrap to the next line */
+        box-sizing: border-box;
+    }
+    
+    .copy-button {
+        margin-left: 5px;
+        vertical-align: top;
+    }
+
+    .error-message {
+        color: red;
+        font-weight: bold;
+    }
+
+    .loading-spinner {
+        display: none;
+        border: 4px solid #f3f3f3; /* Light grey */
+        border-top: 4px solid #3498db; /* Blue */
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 2s linear infinite;
+        margin: 20px auto;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+
+<div class="panel bg3" id="uploader-panel">
+    <div class="inner">
+        <p class="box">{EXPLAIN_TEXT}</p>
+        <fieldset class="fields2">
+            <legend>{L_BLOBUPLOADER_CHOOSE_FILES_EXPLAIN}</legend>
+            <dl>
+                <dt><label for="blobuploader">{L_BLOBUPLOADER_CHOOSE_FILES}</label></dt>
+                <dd><input type="file" name="uploader[]" id="blobuploader" multiple /></dd>
+            </dl>
+            <legend>{L_BLOBUPLOADER_FILES_EXPLAIN}</legend>
+            <dl>
+                <dt><label for="uploaded">{L_BLOBUPLOADED_FILES}</label></dt>
+            </dl>
+            <dl>
+                <dt id="uploaded-files"></dt>
+            </dl>
+        </fieldset>
+        <div class="loading-spinner" id="loading-spinner"></div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        console.log('DOM fully loaded and parsed');
+
+        const uploadedFilesContainer = document.getElementById('uploaded-files');
+        console.log('uploadedFilesContainer:', uploadedFilesContainer);
+
+        const postIdElement = document.getElementById('post_id');
+        console.log('postIdElement:', postIdElement);
+
+        const postId = postIdElement ? postIdElement.value : `new_post_${Math.floor(Math.random() * 1000000)}`;
+        console.log('postId:', postId);
+
+        const storageKey = `uploadedFiles_${postId}`;
+        console.log('storageKey:', storageKey);
+
+        const loadingSpinner = document.getElementById('loading-spinner');
+
+        // Clear local storage for new posts
+        if (!postIdElement) {
+            console.log('Clearing local storage for new post');
+            localStorage.removeItem(storageKey);
+        }
+
+        // Function to display uploaded files
+        function displayUploadedFiles(files) {
+            console.log('Displaying uploaded files:', files);
+            uploadedFilesContainer.innerHTML = ''; // Clear previous uploads
+
+            files.forEach(fileData => {
+                console.log('Processing fileData:', fileData);
+
+                // Create a table row for the thumbnail or error message
+                const tableRow = document.createElement('tr');
+
+                if (fileData.error) {
+                    // Display error message
+                    const errorCell = document.createElement('td');
+                    errorCell.colSpan = 2; // Span across both columns
+                    errorCell.classList.add('error-message');
+                    errorCell.textContent = 'Error: ' + fileData.error;
+                    tableRow.appendChild(errorCell);
+                } else {
+                    // Create a cell for the thumbnail
+                    const thumbnailCell = document.createElement('td');
+                    const thumbnail = document.createElement('img');
+                    thumbnail.src = fileData.thumbnail;
+                    thumbnail.alt = 'Thumbnail';
+                    thumbnail.style.width = '100px';
+                    thumbnail.style.height = 'auto';
+                    thumbnail.style.marginBottom = '5px';
+                    thumbnailCell.appendChild(thumbnail);
+
+                    // Create a cell for the URL and tag
+                    const infoCell = document.createElement('td');
+
+                    // Create a container for the URL and copy button
+                    const urlContainer = document.createElement('div');
+                    urlContainer.classList.add('box-container');
+
+                    const anchorTag = document.createElement('a');
+                    anchorTag.href = fileData.sized;
+                    anchorTag.textContent = fileData.sized;
+                    anchorTag.classList.add('box');
+                    anchorTag.target = '_blank'; // Open the link in a new tab
+
+                    const copyButton = document.createElement('button');
+                    copyButton.innerHTML = '<i class="fa fa-clipboard"></i>';
+                    copyButton.classList.add('copy-button');
+                    copyButton.title = 'Copy URL to Clipboard'; // Add hover indicator
+                    copyButton.addEventListener('click', (event) => {
+                        event.preventDefault(); // Prevent the default action
+                        navigator.clipboard.writeText(fileData.sized).then(() => {
+                            console.log('Copied to clipboard');
+                        }).catch(err => {
+                            console.error('Failed to copy: ', err);
+                        });
+                    });
+
+                    urlContainer.appendChild(anchorTag);
+                    urlContainer.appendChild(copyButton);
+
+                    // Create a container for the BBCode tag and copy button
+                    const tagContainer = document.createElement('div');
+                    tagContainer.classList.add('box-container');
+
+                    const bbcodeTag = '[url=' + fileData.original + '][img]' + fileData.sized + '[/img][/url]';
+                    const preTag = document.createElement('pre');
+                    preTag.textContent = bbcodeTag;
+                    preTag.classList.add('box');
+
+                    const copyTagButton = document.createElement('button');
+                    copyTagButton.innerHTML = '<i class="fa fa-clipboard"></i>';
+                    copyTagButton.classList.add('copy-button');
+                    copyTagButton.title = 'Copy tag to Clipboard'; // Add hover indicator
+                    copyTagButton.addEventListener('click', (event) => {
+                        event.preventDefault(); // Prevent the default action
+                        navigator.clipboard.writeText(bbcodeTag).then(() => {
+                            console.log('BBCode tag copied to clipboard');
+                        }).catch(err => {
+                            console.error('Failed to copy BBCode tag: ', err);
+                        });
+                    });
+
+                    tagContainer.appendChild(preTag);
+                    tagContainer.appendChild(copyTagButton);
+
+                    // Append the URL container and tag container to the info cell
+                    infoCell.appendChild(urlContainer);
+                    infoCell.appendChild(tagContainer);
+
+                    // Append cells to the table row
+                    tableRow.appendChild(thumbnailCell);
+                    tableRow.appendChild(infoCell);
+                }
+
+                // Append the table row to the table
+                const table = document.createElement('table');
+                table.appendChild(tableRow);
+
+                uploadedFilesContainer.appendChild(table);
+            });
+        }
+
+        // Function to upload files
+        async function uploadFiles(files) {
+            console.log('Selected files:', files);
+
+            if (!files.length) {
+                return;
+            }
+
+            const formData = new FormData();
+            Array.from(files).forEach(file => {
+                formData.append('image[]', file);
+            });
+
+            // Log the formData showing its content
+            for (var pair of formData.entries()) {
+                console.log(pair[0] + ', ' + pair[1].name);
+            }
+
+            try {
+                // Show the loading spinner
+                loadingSpinner.style.display = 'block';
+
+                const response = await fetch('/blobuploader', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    // Log info about the response object
+                    console.log('Response status:', response.status);
+                    console.log('Response status text:', response.statusText);
+
+                    if (response.status === 400) {
+                        alert('Error uploading files: The size of the files may be too large. Reduce the number of selected files.');
+                    } else if (response.status === 500) {
+                        alert('Error uploading files: Internal server error');
+                    } else{
+                        alert('Error uploading files: ' + response.status + ' ' + response.statusText);
+                    }
+           
+                    throw new Error('Network response was not ok');
+                }
+
+                const result = await response.json();
+                console.log('Upload result:', result);
+
+                const storedFiles = JSON.parse(localStorage.getItem(storageKey) || '[]');
+                const processedFiles = result.map(fileData => {
+                    if (fileData.error) {
+                        return { error: fileData.error, name: fileData.name };
+                    }
+                    return {
+                        thumbnail: fileData.thumbnail,
+                        sized: fileData.sized,
+                        original: fileData.original
+                    };
+                });
+
+                console.log('Processed files:', processedFiles);
+                const allFiles = storedFiles.concat(processedFiles);
+
+                // Remove duplicates
+                const uniqueFiles = Array.from(new Set(allFiles.map(file => file.sized || file.error)))
+                    .map(uniqueKey => {
+                        return allFiles.find(file => file.sized === uniqueKey || file.error === uniqueKey);
+                    });
+
+                displayUploadedFiles(uniqueFiles);
+
+                // Save the processed files to local storage
+                localStorage.setItem(storageKey, JSON.stringify(uniqueFiles));
+                console.log('Processed files saved to local storage');
+            } catch (error) {
+                console.error('Error uploading files:', error);
+            } finally {
+                // Hide the loading spinner
+                loadingSpinner.style.display = 'none';
+            }
+        }
+
+        const blobUploaderInput = document.getElementById('blobuploader');
+        console.log('blobUploaderInput:', blobUploaderInput);
+
+        if (blobUploaderInput) {
+            blobUploaderInput.addEventListener('change', function (event) {
+                console.log('File input changed');
+                uploadFiles(event.target.files);
+            });
+        }
+
+        // Retrieve uploaded files from local storage and display them
+        const storedFiles = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        console.log('storedFiles:', storedFiles);
+        displayUploadedFiles(storedFiles);
+    });
+</script>

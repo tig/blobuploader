@@ -1,3 +1,4 @@
-tig_blobuploader_controller:
-    path: /uploader/{name}
-    defaults: { _controller: tig.blobuploader.controller.main:handle }
+tig_blobuploader_blobuploader:
+    path: /blobuploader
+    defaults: { _controller: tig.blobuploader.controller.blobuploader:upload }
+    methods: [POST]

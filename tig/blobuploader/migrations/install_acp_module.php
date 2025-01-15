@@ -14,7 +14,8 @@ class install_acp_module extends \phpbb\db\migration\migration
 {
 	public function effectively_installed()
 	{
-		return isset($this->config['tig_blobuploader_goodbye']);
+		//error_log('install_acp_module.php: effectively_installed() : ' . $this->config['tig_blobuploader_mount_dir']);
+		return isset($this->config['tig_blobuploader_mount_dir']);
 	}
 
 	public static function depends_on()
@@ -24,9 +25,8 @@ class install_acp_module extends \phpbb\db\migration\migration
 
 	public function update_data()
 	{
+		//error_log('install_acp_module.php: update_data()');
 		return [
-			['config.add', ['tig_blobuploader_goodbye', 0]],
-
 			['module.add', [
 				'acp',
 				'ACP_CAT_DOT_MODS',

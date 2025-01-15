@@ -1,27 +1,21 @@
 services:
-    tig.blobuploader.controller.main:
-        class: tig\blobuploader\controller\main_controller
+    tig.blobuploader.controller.blobuploader:
+        class: tig\blobuploader\controller\blobuploader
         arguments:
             - '@config'
-            - '@controller.helper'
-            - '@template'
+            - '@user'
             - '@language'
+            - '@request'
+            # - '%core.root_path%'
+            # - '%core.php_ext%'            
 
     tig.blobuploader.controller.acp:
         class: tig\blobuploader\controller\acp_controller
         arguments:
             - '@config'
+            - '@config_text'
             - '@language'
             - '@log'
-            - '@request'
-            - '@template'
-            - '@user'
-
-    tig.blobuploader.controller.ucp:
-        class: tig\blobuploader\controller\ucp_controller
-        arguments:
-            - '@dbal.conn'
-            - '@language'
             - '@request'
             - '@template'
             - '@user'
@@ -29,27 +23,11 @@ services:
     tig.blobuploader.listener:
         class: tig\blobuploader\event\main_listener
         arguments:
+            - '@config'
+            - '@config_text'        
             - '@language'
             - '@controller.helper'
             - '@template'
             - '%core.php_ext%'
         tags:
             - { name: event.listener }
-
-    tig.blobuploader.cron.task.sample:
-        class: tig\blobuploader\cron\task\sample
-        arguments:
-            - '@config'
-        calls:
-            - [set_name, [cron.task.tig.blobuploader.sample]]
-        tags:
-            - { name: cron.task }
-
-    tig.blobuploader.notification.type.sample:
-        class: tig\blobuploader\notification\type\sample
-        shared: false # service MUST not be shared for this to work!
-        parent: notification.type.base
-        calls:
-            - [set_controller_helper, ['@controller.helper']]
-        tags:
-            - { name: notification.type }

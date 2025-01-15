@@ -28,6 +28,8 @@ class main_module
 	 */
 	public function main($id, $mode)
 	{
+		//error_log('main_module.php: main()');
+
 		global $phpbb_container;
 
 		/** @var \tig\blobuploader\controller\acp_controller $acp_controller */
@@ -40,7 +42,7 @@ class main_module
 		$this->page_title = 'ACP_BLOBUPLOADER_TITLE';
 
 		// Make the $u_action url available in our ACP controller
-		$acp_controller->set_page_url($this->u_action);
+		//$acp_controller->set_page_url($this->u_action);
 
 		// Load the display options handle in our ACP controller
 		$acp_controller->display_options();

@@ -35,18 +35,43 @@ if (empty($lang) || !is_array($lang))
 //
 
 $lang = array_merge($lang, [
+	// Uploader UI
+	'BLOGUPLOADER_PANEL_TITLE'			=> 'Uploader',
+	'BLOBUPLOADER_UPLOADER_PANEL_EXPLAIN' => 'Here you can upload images.',
 
-	'BLOBUPLOADER_HELLO'		=> 'Hello %s!',
-	'BLOBUPLOADER_GOODBYE'		=> 'Goodbye %s!',
+	'BLOBUPLOADER_CHOOSE_FILES_EXPLAIN' => 'Click the Choose Files button to select images to upload. You can upload multiple images at once.',
+	'BLOBUPLOADER_CHOOSE_FILES' => 'Choose files',
 
-	'BLOBUPLOADER_EVENT'		=> ' :: Blobuploader Event :: ',
+	'BLOBUPLOADER_FILES_EXPLAIN' => 'Uploaded files are listed below. Use the copy button to copy the link or BBcode to the clipboard and paste it into your post.',
+	'BLOBUPLOADED_FILES' => 'Uploaded files',
 
-	'ACP_BLOBUPLOADER_GOODBYE'			=> 'Should say goodbye?',
+    'BLOBUPLOADER_ORIGINAL_PREFIX' => '_original',
+    'BLOBUPLOADER_SIZED_PREFIX' => '_sized',
+    'BLOBUPLOADER_THUMBNAIL_PREFIX' => '_thumbnail',
+
+	// ACP
+	'ACP_BLOBUPLOADER_TITLE'	=> 'Blob Uploader',
+	'ACP_BLOBUPLOADER'			=> 'Blob Uploader Settings',
+
+	'LOG_ACP_BLOBUPLOADER_SETTINGS'		=> '<strong>Blob Uploader settings updated</strong>',
+
 	'ACP_BLOBUPLOADER_SETTING_SAVED'	=> 'Settings have been saved successfully!',
 
-	'TIG_BLOBUPLOADER_NOTIFICATION'	=> 'Blob Uploader notification',
-
-	'BLOBUPLOADER_PAGE'			=> 'Upload',
-	'VIEWING_TIG_BLOBUPLOADER'			=> 'Viewing Blob Uploader page',
+	'ACP_BLOBUPLOADER_EXPLAIN_TEXT' => 'Uploader Explaination Text',
+    'ACP_BLOBUPLOADER_EXPLAIN_TEXT_EXPLAIN' => 'Text that will be displayed in the uploader explaining policies, etc...',
+    'ACP_BLOBUPLOADER_BLOB_MOUNT_DIRECTORY' => 'Blob Mount Directory',
+    'ACP_BLOBUPLOADER_BLOB_MOUNT_DIRECTORY_EXPLAIN' => 'The directory where blobs are uploaded to (e.g. images/uploads/).',
+    'ACP_BLOBUPLOADER_URL_BASE' => 'Blob URL Base',
+    'ACP_BLOBUPLOADER_URL_BASE_EXPLAIN' => 'The base URL for accessing blobs (e.g. https://mye28.z13.web.core.windows.net/). If empty, the blob mount directory will be used as the base URL (with a preceding slash).',
+    'ACP_BLOBUPLOADER_ALLOWED_EXTENSIONS' => 'Allowed Extensions',
+    'ACP_BLOBUPLOADER_ALLOWED_EXTENSIONS_EXPLAIN' => 'Comma-separated list of allowed file extensions.',
+    'ACP_BLOBUPLOADER_WIDTH' => 'Width',
+    'ACP_BLOBUPLOADER_HEIGHT' => 'Height',
+    'ACP_BLOBUPLOADER_MAX_ORIGINAL_SIZE' => 'Max Original Size',
+    'ACP_BLOBUPLOADER_MAX_ORIGINAL_SIZE_EXPLAIN' => 'Maximum width and height for the original image.',
+    'ACP_BLOBUPLOADER_SIZED_SIZE' => 'Sized Image Size',
+    'ACP_BLOBUPLOADER_SIZED_SIZE_EXPLAIN' => 'Width and height for the sized image.',
+    'ACP_BLOBUPLOADER_THUMBNAIL_SIZE' => 'Thumbnail Size',
+    'ACP_BLOBUPLOADER_THUMBNAIL_SIZE_EXPLAIN' => 'Width and height for the thumbnail image.',
 
 ]);
