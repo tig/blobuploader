@@ -3,7 +3,7 @@
  *
  * Blob Uploader. An extension for the phpBB Forum Software package.
  *
- * @copyright (c) 2025, tig, https://github.com/tig
+ * @copyright (c) 2025, tig
  * @license GNU General Public License, version 2 (GPL-2.0)
  *
  */
@@ -65,8 +65,12 @@ class blobuploader
         $sized_width = (int) $this->config['tig_blobuploader_sized_width'];
         $sized_height = (int) $this->config['tig_blobuploader_sized_height'];
 
+        //error_log('request: ' . print_r( $this->request, true));
+
         // Access the input property directly
         $input = (array) $this->request;
+
+
         $files = $input["\0*\0input"][5]['image'];
 
         //error_log('files: ' . print_r($files, true));
@@ -88,16 +92,15 @@ class blobuploader
             // Reformat the files array to use associative keys
             $files = array_map(function($name, $full_path, $type, $tmp_name, $error, $size) {
                 return compact('name', 'full_path', 'type', 'tmp_name', 'error', 'size');
-            }, $files['name'], $files['full_path'], $files['type'], $files['tmp_name'], $files['error'], $files['size']);
+            }, (array)$files['name'], (array)$files['full_path'], (array)$files['type'], (array)$files['tmp_name'], (array)$files['error'], (array)$files['size']);
         }
 
+        //error_log('files: ' . print_r($files, true));
+
         foreach ($files as $file_to_upload) {
-            //error_log('File to upload: ' . print_r($file_to_upload, true));
+            error_log('Processing file: ' . $file_to_upload['name']);
 
             if (isset($file_to_upload['error']) && $file_to_upload['error'] == 0) {
-                // Process the file
-                error_log('Processing file: ' . $file_to_upload['name']);
-
                 // Validate the file type
                 $ext = strtolower(pathinfo($file_to_upload['name'], PATHINFO_EXTENSION));
                 if (!in_array($ext, $allowed_extensions))
@@ -114,10 +117,10 @@ class blobuploader
 
                     if ($ext === 'heic')
                     {
-                        error_log('heic file detected');
+                        //error_log('heic file detected');
                         // Need to copy the tmp file to a file with .heic extension and use that
                         $heic_file = $file_to_upload['tmp_name'] . '.heic';
-                        error_log('Copying ' . $file_to_upload['tmp_name'] . ' to ' . $heic_file);
+                        //error_log('Copying ' . $file_to_upload['tmp_name'] . ' to ' . $heic_file);
                         copy($file_to_upload['tmp_name'], $heic_file);
                         $file_to_upload['tmp_name'] = $heic_file;
                     }
@@ -132,16 +135,21 @@ class blobuploader
                     continue;
                 }
 
-                // Generate the SHA-256 hash
-                $image_hash_full = $imagick->identifyImage()['signature'];
+                // Measure time taken for hashing
+                $start_time = microtime(true);
 
-                // Truncate the hash to 24 characters (some risk of collisions, but tiny)
-                $image_hash = substr($image_hash_full, 0, 24);
+                // Generate an MD5 hash on the first 500KB of the image file
+                $file_handle = fopen($file_to_upload['tmp_name'], 'rb');
+                $file_data = fread($file_handle, 500 * 1024); // Read the first 500KB
+                fclose($file_handle);
+                $image_hash = substr(md5($file_data), 0, 16); // 16 characters long
 
-                error_log('hash: ' . $image_hash);
+                $end_time = microtime(true);
+                $hash_time = $end_time - $start_time;
+                error_log('Hashing time: ' . $hash_time . ' seconds');
 
                 // Create user-specific directory if it doesn't exist
-                $user_upload_dir = $upload_dir . '/' . $this->user->data['user_id'];
+                $user_upload_dir = $upload_dir . $this->user->data['user_id'];
                 if (!is_dir($user_upload_dir)) {
                     mkdir($user_upload_dir, 0777, true);
                 }
@@ -161,29 +169,84 @@ class blobuploader
                     continue;
                 }
 
-                // Convert HEIC to JPG if necessary
+                // Measure time taken for HEIC to JPG conversion
                 if ($ext === 'heic')
                 {
+                    $start_time = microtime(true);
+
                     $imagick->setImageFormat('jpg');
                     $ext = 'jpg';
                     $file_to_upload['name'] = pathinfo($file_to_upload['name'], PATHINFO_FILENAME) . '.jpg';
+
+                    $end_time = microtime(true);
+                    $conversion_time = $end_time - $start_time;
+                    error_log('HEIC to JPG conversion time: ' . $conversion_time . ' seconds');
                 }
 
                 try {
-                    $this->resizeImageWithOrientation($imagick, $max_original_width, $max_original_height);
-                    $imagick->writeImage($user_upload_dir . '/' . $original_filename);
+                    if ($ext === 'gif') {
 
-                    $sized = clone $imagick;
-                    $this->resizeImageWithOrientation($sized, $sized_width, $sized_height);
-                    $sized->writeImage($user_upload_dir . '/' . $sized_filename);
+                        // Handle GIF files
+                        $start_time = microtime(true);
+                        $imagick = $imagick->coalesceImages();
+                        foreach ($imagick as $frame) {
+                            $this->resizeImageWithOrientation($frame, $max_original_width, $max_original_height);
+                        }
+                        $imagick = $imagick->deconstructImages();
+                        $imagick->writeImages($user_upload_dir . '/' . $original_filename, true);
+                        $end_time = microtime(true);
+                        error_log('Creating GIF _original time: ' . $end_time - $start_time . ' seconds');
 
-                    $thumbnail = clone $imagick;
-                    $this->resizeImageWithOrientation($thumbnail, 300, 300); // Assuming 300x300 for thumbnail
-                    $thumbnail->writeImage($user_upload_dir . '/' . $thumbnail_filename);
+                        $start_time = microtime(true);
+                        $sized = $imagick->coalesceImages();
+                        foreach ($sized as $frame) {
+                            $this->resizeImageWithOrientation($frame, $sized_width, $sized_height);
+                        }
+                        $sized = $sized->deconstructImages();
+                        $sized->writeImages($user_upload_dir . '/' . $sized_filename, true);
+                        $end_time = microtime(true);
+                        error_log('Creating GIF _sized time: ' . $end_time - $start_time . ' seconds');
 
-                    $thumbnail->clear();
-                    $sized->clear();
-                    $imagick->clear();
+                        $start_time = microtime(true);
+                        $thumbnail = $imagick->coalesceImages();
+                        foreach ($thumbnail as $frame) {
+                            $this->resizeImageWithOrientation($frame, 300, 300); // Assuming 300x300 for thumbnail
+                        }
+                        $thumbnail = $thumbnail->deconstructImages();
+                        $thumbnail->writeImages($user_upload_dir . '/' . $thumbnail_filename, true);
+                        $end_time = microtime(true);
+                        error_log('Creating GIF _thumbnail time: ' . $end_time - $start_time . ' seconds');
+
+                        $thumbnail->clear();
+                        $sized->clear();
+                        $imagick->clear();
+                    } else {
+
+                        // Handle non-GIF files
+                        $start_time = microtime(true);
+                        $this->resizeImageWithOrientation($imagick, $max_original_width, $max_original_height);
+                        $imagick->writeImage($user_upload_dir . '/' . $original_filename);
+                        $end_time = microtime(true);
+                        error_log('Creating _original time: ' .  $end_time - $start_time . ' seconds');
+
+                        $start_time = microtime(true);
+                        $sized = clone $imagick;
+                        $this->resizeImageWithOrientation($sized, $sized_width, $sized_height);
+                        $sized->writeImage($user_upload_dir . '/' . $sized_filename);
+                        $end_time = microtime(true);
+                        error_log('Creating _sized time: ' .  $end_time - $start_time . ' seconds');
+
+                        $start_time = microtime(true);
+                        $thumbnail = clone $imagick;
+                        $this->resizeImageWithOrientation($thumbnail, 300, 300); // Assuming 300x300 for thumbnail
+                        $thumbnail->writeImage($user_upload_dir . '/' . $thumbnail_filename);
+                        $end_time = microtime(true);
+                        error_log('Creating _thumnail time: ' .  $end_time - $start_time . ' seconds');
+
+                        $thumbnail->clear();
+                        $sized->clear();
+                        $imagick->clear();
+                    }
 
                     $response_data[] = [
                         'original' =>  $url_base . $this->user->data['user_id'] . '/' . $original_filename,
@@ -199,6 +262,8 @@ class blobuploader
                 error_log('Error uploading the file: ' . $file_to_upload['error']);
             }
         }
+
+        error_log('response_data: ' . json_encode($response_data));
 
         return new Response(json_encode($response_data), 200, ['Content-Type' => 'application/json']);
     }
