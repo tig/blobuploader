@@ -1,49 +1,149 @@
 document.addEventListener('DOMContentLoaded', function () {
-    const urlParams = new URLSearchParams(window.location.search);
-    const mode = urlParams.get('mode');
-    const forumId = urlParams.get('f');
-    const topicId = urlParams.get('t');
-    const postId = urlParams.get('p');
-
-    // Generate a unique storage key based on the URL parameters
-    const storageKey = generateStorageKey(mode, forumId, topicId, postId);
-    console.log('Storage key:', storageKey);
-
-    
-    // Clear local storage if starting a new post
-    if (mode === 'post' && !postId) {
-        localStorage.removeItem(storageKey);
-        console.log('Local storage cleared for new post');
-    }
-    
-    const loadingSpinner = document.getElementById('loading-spinner');
     const uploadedFilesContainer = document.getElementById('uploaded-files');
-
-    // Retrieve uploaded files from local storage and display them
-    const storedFiles = JSON.parse(localStorage.getItem(storageKey) || '[]');
-    console.log('storedFiles:', storedFiles);
-    displayUploadedFiles(storedFiles, uploadedFilesContainer);
-
     const filesToUpload = document.getElementById('files-to-upload');
-    console.log('filesToUpload:', filesToUpload);
+    const loadingSpinner = document.getElementById('loading-spinner');
+    const formElement = document.getElementById('postform');
+    const hiddenField = document.getElementById('uploaded-files-field');
+    const copyAllLink = document.getElementById('copy-all-bbcodes-link');
 
-    if (filesToUpload) {
-        filesToUpload.addEventListener('change', function (event) {
-            console.log('File input changed');
-            uploadFiles(event.target.files, storageKey, loadingSpinner, uploadedFilesContainer);
+    // Check if formElement exists
+    if (formElement) {
+        // Restore uploaded files from the hidden input field
+        restoreUploadedFilesFromForm(hiddenField, uploadedFilesContainer);
+
+        // Add event listener for file uploads
+        if (filesToUpload) {
+            filesToUpload.addEventListener('change', async function (event) {
+                const files = event.target.files;
+                const updatedFiles = await uploadFiles(files, hiddenField, loadingSpinner);
+                displayUploadedFiles(updatedFiles, uploadedFilesContainer);
+
+                // Update the hidden input field
+                updateHiddenField(hiddenField, updatedFiles);
+            });
+        }
+
+        // Ensure the hidden field is updated before form submission
+        console.log('Form element found. Adding submit event listener.');
+        formElement.addEventListener('submit', function () {
+            const storedFiles = getStoredFiles(hiddenField);
+            console.log('Submitting form with files:', storedFiles);
+            updateHiddenField(hiddenField, storedFiles);
         });
+    } else {
+        console.warn('Form element with id "postdata" not found.');
     }
+
+    // Add event listener for the "copy all BBcodes" link
+    if (copyAllLink) {
+        copyAllLink.addEventListener('click', function (event) {
+            event.preventDefault(); // Prevent default link behavior
+            const storedFiles = getStoredFiles(hiddenField);
+            const allBBcodes = storedFiles
+                .filter(file => !file.error) // Skip files with errors
+                .map(file => `[url=${file.original}]\n [img]${file.sized}[/img]\n[/url]\n`)
+                .join('\n');
+            
+            navigator.clipboard.writeText(allBBcodes).then(() => {
+                //alert('BBcodes copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy BBcodes:', err);
+            });
+        });
+        }
 });
 
-function generateStorageKey(mode, forumId, topicId, postId) {
-    let storageKey = 'uploadedFiles_';
-    if (mode) storageKey += 'mode_' + mode + '_';
-    if (forumId) storageKey += 'forum_' + forumId + '_';
-    if (topicId) storageKey += 'topic_' + topicId + '_';
-    if (postId) storageKey += 'post_' + postId;
-    return storageKey;
+
+// Restore uploaded files from the hidden input field
+function restoreUploadedFilesFromForm(hiddenField, container) {
+    const uploadedFiles = hiddenField.value ? JSON.parse(hiddenField.value) : [];
+    console.log('Restored files:', uploadedFiles);
+    displayUploadedFiles(uploadedFiles, container);
 }
 
+// Update the hidden input field with the latest uploaded files
+function updateHiddenField(hiddenField, files) {
+    console.log('Updating hidden field with files:', files);
+    hiddenField.value = JSON.stringify(files);
+    console.log('Hidden field value:', hiddenField.value);
+}
+
+// Get stored files from the hidden input field
+function getStoredFiles(hiddenField) {
+    console.log('Getting stored files from hidden field');
+    if (hiddenField.value) {
+        console.log('Stored files:', JSON.parse(hiddenField.value));
+    }
+    return hiddenField.value ? JSON.parse(hiddenField.value) : [];
+}
+
+// Handle file uploads
+async function uploadFiles(files, hiddenField, loadingSpinner) {
+    const storedFiles = getStoredFiles(hiddenField);
+
+    for (const file of files) {
+        const uploadedFile = await uploadSingleFile(file, loadingSpinner);
+        if (uploadedFile) {
+            console.log('Uploaded file. Storing:', uploadedFile);
+            storedFiles.push(uploadedFile);
+        }
+    }
+
+    // Remove duplicates
+    const uniqueFiles = removeDuplicateFiles(storedFiles);
+
+    // Update the hidden input field
+    updateHiddenField(hiddenField, uniqueFiles);
+
+    return uniqueFiles;
+}
+
+// Upload a single file
+async function uploadSingleFile(file, loadingSpinner) {
+    console.log('Selected file:', file);
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+        loadingSpinner.style.display = 'block';
+
+        const response = await fetch('/blobuploader', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            handleUploadError(response);
+            return null;
+        }
+
+        const result = await response.json();
+        console.log('Upload result:', result);
+
+        // Handle the result as an array and extract the first item
+        if (Array.isArray(result) && result.length > 0) {
+            const fileData = result[0];
+            return {
+                thumbnail: fileData.thumbnail,
+                sized: fileData.sized,
+                original: fileData.original,
+                name: file.name
+            };
+        } else {
+            console.error('Unexpected response format:', result);
+            return { error: 'Unexpected response format', name: file.name };
+        }
+    } catch (error) {
+        console.error('Error uploading file:', error);
+        return { error: 'Network error', name: file.name };
+    } finally {
+        loadingSpinner.style.display = 'none';
+    }
+}
+
+
+// Display uploaded files
 function displayUploadedFiles(files, container) {
     container.innerHTML = '';
     files.forEach(fileData => {
@@ -124,97 +224,59 @@ function displayUploadedFiles(files, container) {
     });
 }
 
+// Create file info container for URLs and tags
+function createFileInfoContainer(content, title, isBBCode = false) {
+    const container = document.createElement('div');
+    container.classList.add('box-container');
+
+    const displayElement = isBBCode ? document.createElement('pre') : document.createElement('a');
+    if (isBBCode) {
+        displayElement.textContent = content;
+    } else {
+        displayElement.href = content;
+        displayElement.textContent = content;
+        displayElement.target = '_blank';
+    }
+
+    const copyButton = createCopyButton(content, title);
+    container.appendChild(displayElement);
+    container.appendChild(copyButton);
+
+    return container;
+}
+
+// Create copy button
 function createCopyButton(text, title) {
     const button = document.createElement('button');
     button.innerHTML = '<i class="fa fa-clipboard"></i>';
-    button.classList.add('copy-button');
-    button.title = title; // Add hover indicator
+    button.title = title;
     button.addEventListener('click', (event) => {
-        event.preventDefault(); // Prevent the default action
+        event.preventDefault();
         navigator.clipboard.writeText(text).then(() => {
             console.log('Copied to clipboard');
         }).catch(err => {
-            console.error('Failed to copy: ', err);
+            console.error('Failed to copy:', err);
         });
     });
     return button;
 }
 
-async function uploadFiles(files, storageKey, loadingSpinner, container) {
-    for (const file of files) {
-        await uploadSingleFile(file, storageKey, loadingSpinner, container);
-    }
+// Handle file upload errors
+function handleUploadError(response) {
+    console.log(`Response status: ${response.status}`);
+    console.log(`Response status text: ${response.statusText}`);
+    alert(`Error uploading file: ${response.status} ${response.statusText}`);
 }
 
-async function uploadSingleFile(file, storageKey, loadingSpinner, container) {
-    console.log('Selected file:', file);
-
-    const formData = new FormData();
-    formData.append('image', file);
-
-    // Log the formData showing its content
-    for (var pair of formData.entries()) {
-        console.log(pair[0] + ', ' + (pair[1] instanceof File ? pair[1].name : pair[1]));
-    }
-    
-    try {
-        // Show the loading spinner
-        loadingSpinner.style.display = 'block';
-
-        const response = await fetch('/blobuploader', {
-            method: 'POST',
-            body: formData
-        });
-
-        if (!response.ok) {
-            // Log info about the response object
-            console.log('Response status:', response.status);
-            console.log('Response status text:', response.statusText);
-
-            if (response.status === 400) {
-                alert('Error uploading file: The size of the file may be too large.');
-            } else if (response.status === 500) {
-                alert('Error uploading file: Internal server error');
-            } else {
-                alert('Error uploading file: ' + response.status + ' ' + response.statusText);
-            }
-
-            throw new Error('Network response was not ok');
+// Remove duplicate files based on the `sized` URL
+function removeDuplicateFiles(files) {
+    const seen = new Set();
+    return files.filter(file => {
+        const key = file.sized || file.error;
+        if (seen.has(key)) {
+            return false;
         }
-
-        const result = await response.json();
-        console.log('Upload result:', result);
-
-        const storedFiles = JSON.parse(localStorage.getItem(storageKey) || '[]');
-        const processedFiles = result.map(fileData => {
-            if (fileData.error) {
-                return { error: fileData.error, name: fileData.name };
-            }
-            return {
-                thumbnail: fileData.thumbnail,
-                sized: fileData.sized,
-                original: fileData.original
-            };
-        });
-
-        console.log('Processed files:', processedFiles);
-        const allFiles = storedFiles.concat(processedFiles);
-
-        // Remove duplicates
-        const uniqueFiles = Array.from(new Set(allFiles.map(file => file.sized || file.error)))
-            .map(uniqueKey => {
-                return allFiles.find(file => file.sized === uniqueKey || file.error === uniqueKey);
-            });
-
-        displayUploadedFiles(uniqueFiles, container);
-
-        // Save the processed files to local storage
-        localStorage.setItem(storageKey, JSON.stringify(uniqueFiles));
-        console.log('Processed files saved to local storage');
-    } catch (error) {
-        console.error('Error uploading file:', error);
-    } finally {
-        // Hide the loading spinner
-        loadingSpinner.style.display = 'none';
-    }
+        seen.add(key);
+        return true;
+    });
 }

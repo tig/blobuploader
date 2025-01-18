@@ -29,5 +29,7 @@ services:
             - '@controller.helper'
             - '@template'
             - '%core.php_ext%'
+            - '@request'
+            
         tags:
             - { name: event.listener }

@@ -65,13 +65,13 @@
 
     .box-container {
         display: flex; /* Use flexbox to align items */
-    align-items: center; /* Vertically center items */
-    margin: 0;
-    margin-left: 5px; /* Space between the box and the button */
+        align-items: center; /* Vertically center items */
+        margin: 0;
+        margin-left: 5px; /* Space between the box and the button */
     }
 
     .box {
-        font-size: inherit;
+        font-size: smaller;
         font-family: inherit;
         border: 1px solid #ccc;
         padding: 5px;
@@ -131,9 +131,16 @@
         }
     }
 
+    #copy-all-bbcodes-link {
+        cursor: pointer;
+        color: #007bff;
+        font-size: smaller;
+    }
+
     .copy-button {
         margin-left: 5px;
         cursor: pointer;
+        font-size:larger;
     }
 
     .loading-spinner {
@@ -160,6 +167,9 @@
     }
 </style>
 
+<!-- hidden input field to the form to track uploaded files, for when Preview is pressed -->
+<input type="hidden" name="tig_blobuploader_uploaded_files" id="uploaded-files-field" value="{TIG_BLOBUPLOADER_UPLOADED_FILES}">
+
 <div class="panel bg3" id="uploader-panel">
     <div class="inner">
         <p class="box">{EXPLAIN_TEXT}</p>
@@ -172,9 +182,17 @@
                 <dd><input type="file" name="uploader[]" id="files-to-upload" multiple /></dd>
             </dl>
 
+            <legend class="blobuploader-hide">{L_BLOBUPLOADER_FILES_EXPLAIN}</legend>
+            
             <!-- Uploaded files section -->
-            <dl class="blobuploader">
-                <dt><label for="uploaded">{L_BLOBUPLOADED_FILES}</label></dt>
+            <dl class="blobuploader blobuploader-hide">
+                <dt>
+                    <label for="uploaded">{L_BLOBUPLOADED_FILES}</label>
+                    <!-- Add the "Copy BBCodes for all images" link -->
+                    <dd class="copy-all-bbcodes">
+                        <a href="#" id="copy-all-bbcodes-link">{L_BLOBUPLOADER_COPY_ALL_EXPLAIN}<i class="fa fa-clipboard"></i></a>
+                    </dd>                
+                </dt>
                 <dd class="blobuploader" id="uploaded-files">
                     <!-- Dynamically injected content goes here -->
                     <!-- 

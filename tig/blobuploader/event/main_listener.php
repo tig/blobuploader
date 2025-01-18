@@ -38,6 +38,9 @@ class main_listener implements EventSubscriberInterface
 	/** @var string phpEx */
 	protected $php_ext;
 
+	/** @var \phpbb\request\request */
+	protected $request;
+
 	/**
 	 * Constructor
 	 *
@@ -52,7 +55,8 @@ class main_listener implements EventSubscriberInterface
 		\phpbb\language\language $language, 
 		\phpbb\controller\helper $helper, 
 		\phpbb\template\template $template, 
-		$php_ext
+		$php_ext,
+        \phpbb\request\request $request,
 		)
 	{
 		$this->language = $language;
@@ -61,6 +65,7 @@ class main_listener implements EventSubscriberInterface
 		$this->helper   = $helper;
 		$this->template = $template;
 		$this->php_ext  = $php_ext;
+        $this->request = $request;
 
 		//error_log('main_listener.php: __construct()');
 	}
@@ -68,10 +73,29 @@ class main_listener implements EventSubscriberInterface
 	public static function getSubscribedEvents()
 	{
 		return [
-			'core.user_setup'  => 'load_language_on_setup',
-			'core.page_header' => 'on_page_header',
+			'core.user_setup'  					=> 'load_language_on_setup',
+			'core.page_header' 					=> 'on_page_header',
+			'core.posting_modify_message_text' 	=> 'handle_preview'
 		];
 	}
+
+	
+    public function handle_preview ($event) 
+    {
+        error_log('handle_preview');
+        $preview = $event['preview'];
+        error_log('preview: ' . $preview);
+
+        $uploadedFiles = $this->request->variable('tig_blobuploader_uploaded_files', '', true);
+
+		if ($preview === false) {
+            return;
+        }
+        $this->template->assign_vars([
+            'TIG_BLOBUPLOADER_UPLOADED_FILES' => $uploadedFiles ,
+        ]);
+       
+   }
 
     /**
      * Event handler for the core.page_header event.
