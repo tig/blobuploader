@@ -3,7 +3,7 @@
     "type": "phpbb-extension",
     "description": "A file and photo uploader that uses a blob storage backend, like Amazon S3 or Azure Blob Storage.",
     "homepage": "https://github.com/tig/blobuploader",
-    "version": "1.0.4-dev",
+    "version": "1.0.5-dev",
     "time": "2025-01-16",
     "license": "GPL-2.0-only",
     "authors": [

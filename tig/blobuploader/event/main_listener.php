@@ -75,17 +75,15 @@ class main_listener implements EventSubscriberInterface
 		return [
 			'core.user_setup'  					=> 'load_language_on_setup',
 			'core.page_header' 					=> 'on_page_header',
-			'core.posting_modify_message_text' 	=> 'handle_preview'
+			'core.posting_modify_message_text' 	=> 'handle_preview',
+			'core.posting_modify_default_variables' => 'set_vars_for_uploader',
 		];
 	}
 
 	
     public function handle_preview ($event) 
     {
-        error_log('handle_preview');
         $preview = $event['preview'];
-        error_log('preview: ' . $preview);
-
         $uploadedFiles = $this->request->variable('tig_blobuploader_uploaded_files', '', true);
 
 		if ($preview === false) {
@@ -94,7 +92,6 @@ class main_listener implements EventSubscriberInterface
         $this->template->assign_vars([
             'TIG_BLOBUPLOADER_UPLOADED_FILES' => $uploadedFiles ,
         ]);
-       
    }
 
     /**
@@ -128,5 +125,33 @@ class main_listener implements EventSubscriberInterface
 		];
 		$event['lang_set_ext'] = $lang_set_ext;
 
+	}
+
+	/**
+	 * Event listener for core.posting_layout event
+	 *
+	 * @param \phpbb\event\data $event
+	 */
+	public function set_vars_for_uploader($event){
+
+		$this->template->assign_vars([
+            'BLOB_MOUNT_DIRECTORY' => $this->config['tig_blobuploader_mount_dir'],
+
+			'USE_BLOB_SERVICE' => $this->config['tig_use_blob_service'],
+            'IMAGEPROCESSOR_FN_URL' => $this->config['tig_imageprocessor_fn_url'],
+            'IMAGEPROCESSOR_APPID' => $this->config['tig_imageprocessor_appid'],
+
+            'BLOBSTORE_CONNECTIONSTRING' => $this->config['tig_blobstore_connectionstring'],
+            
+            'URL_BASE' => $this->config['tig_blobuploader_url_base'],
+
+            'ALLOWED_EXTENSIONS' => $this->config['tig_blobuploader_allowed_extensions'],
+            'MAX_ORIGINAL_WIDTH' => $this->config['tig_blobuploader_max_original_width'],
+            'MAX_ORIGINAL_HEIGHT' => $this->config['tig_blobuploader_max_original_height'],
+            'SIZED_WIDTH' => $this->config['tig_blobuploader_sized_width'],
+            'SIZED_HEIGHT' => $this->config['tig_blobuploader_sized_height'],
+            'THUMBNAIL_WIDTH' => $this->config['tig_blobuploader_thumbnail_width'],
+            'THUMBNAIL_HEIGHT' => $this->config['tig_blobuploader_thumbnail_height'],
+        ]);
 	}
 }

@@ -56,14 +56,25 @@ $lang = array_merge($lang, [
 
 	'LOG_ACP_BLOBUPLOADER_SETTINGS'		=> '<strong>Blob Uploader settings updated</strong>',
 
-	'ACP_BLOBUPLOADER_SETTING_SAVED'	=> 'Settings have been saved successfully!',
+	'ACP_BLOBUPLOADER_SETTING_SAVED'	=> 'Blob Uploader settings have been saved successfully!',
 
 	'ACP_BLOBUPLOADER_EXPLAIN_TEXT' => 'Uploader Explaination Text',
     'ACP_BLOBUPLOADER_EXPLAIN_TEXT_EXPLAIN' => 'Text that will be displayed in the uploader explaining policies, etc...',
-    'ACP_BLOBUPLOADER_BLOB_MOUNT_DIRECTORY' => 'Blob Mount Directory',
-    'ACP_BLOBUPLOADER_BLOB_MOUNT_DIRECTORY_EXPLAIN' => 'The directory where blobs are uploaded to (e.g. images/uploads/).',
+
+    'ACP_BLOBUPLOADER_USE_BLOBSERVICE' => 'Use Azure Blob Service',
+    'ACP_BLOBUPLOADER_USE_BLOBSERVICE_EXPLAIN' => 'Enable this option to use Azure Blob Storage for file uploads. Disable to use local storage.',
+    'ACP_BLOBUPLOADER_IMAGEPROCESSOR_FN_URL' => 'Azure Function URL',
+    'ACP_BLOBUPLOADER_IMAGEPROCESSOR_FN_URL_EXPLAIN' => 'The URL of the Azure Function used for processing images.',
+
+    'ACP_BLOBUPLOADER_IMAGEPROCESSOR_APPID' => 'Azure Function App ID',
+    'ACP_BLOBUPLOADER_IMAGEPROCESSOR_APPID_EXPLAIN' => 'The App ID of the Azure Function App used for processing images.',
+    'ACP_BLOBUPLOADER_BLOBSTORE_CONNECTIONSTRING' => 'Blob Storage Connection String',
+    'ACP_BLOBUPLOADER_BLOBSTORE_CONNECTIONSTRING_EXPLAIN' => 'The connection string for the Azure Blob Storage account.',
+
+    'ACP_BLOBUPLOADER_BLOB_MOUNT_DIRECTORY' => 'Blob Sub-Directory',
+    'ACP_BLOBUPLOADER_BLOB_MOUNT_DIRECTORY_EXPLAIN' => 'The sub-directory where blobs are uploaded to (e.g. uploads/).',
     'ACP_BLOBUPLOADER_URL_BASE' => 'Blob URL Base',
-    'ACP_BLOBUPLOADER_URL_BASE_EXPLAIN' => 'The base URL for accessing blobs (e.g. https://mye28.z13.web.core.windows.net/). If empty, the blob mount directory will be used as the base URL (with a preceding slash).',
+    'ACP_BLOBUPLOADER_URL_BASE_EXPLAIN' => 'The base URL for accessing blobs (e.g. /images/ or https://mye28.z13.web.core.windows.net/).',
     'ACP_BLOBUPLOADER_ALLOWED_EXTENSIONS' => 'Allowed Extensions',
     'ACP_BLOBUPLOADER_ALLOWED_EXTENSIONS_EXPLAIN' => 'Comma-separated list of allowed file extensions.',
     'ACP_BLOBUPLOADER_WIDTH' => 'Width',

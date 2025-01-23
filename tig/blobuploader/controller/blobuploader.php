@@ -7,9 +7,11 @@
  * @license GNU General Public License, version 2 (GPL-2.0)
  *
  */
+
 namespace tig\blobuploader\controller;
 
 use Symfony\Component\HttpFoundation\Response;
+use tig\blobuploader\helpers\ImageProcessor;
 
 class blobuploader
 {
@@ -25,6 +27,9 @@ class blobuploader
     /** @var \phpbb\request\request */
     protected $request;
 
+    /** @var ImageProcessor */
+    protected $imageProcessor;
+
     /**
      * Constructor.
      *
@@ -34,8 +39,8 @@ class blobuploader
      * @param \phpbb\request\request $request Request object
      */
     public function __construct(
-        \phpbb\config\config $config, 
-        \phpbb\user $user, 
+        \phpbb\config\config $config,
+        \phpbb\user $user,
         \phpbb\language\language $language,
         \phpbb\request\request $request
     ) {
@@ -44,19 +49,31 @@ class blobuploader
         $this->language = $language;
         $this->request = $request;
 
+        // Initialize the image processor
+        $this->imageProcessor = new ImageProcessor();
+
         // Load the language file
         $this->language->add_lang('common', 'tig/blobuploader');
     }
 
     public function upload()
     {
-        // Retrieve configuration settings
-        $upload_dir = $this->config['tig_blobuploader_mount_dir'];
-        $url_base = $this->config['tig_blobuploader_url_base'];
+        $this->startPerfLog('upload', '============= Start upload ==============');
 
-        if ($url_base === '')
-        {
-            $url_base = '/' . $upload_dir;
+        // Retrieve configuration settings
+
+        $use_blob_service = (bool) $this->config['tig_use_blob_service'];
+        $url_base = $this->config['tig_blobuploader_url_base'];
+        $upload_dir = $this->config['tig_blobuploader_mount_dir'];
+
+        if ($use_blob_service) {
+            $imageprocessor_fn_url = $this->config['tig_imageprocessor_fn_url'];
+            $imageprocessor_appid = $this->config['tig_imageprocessor_appid'];
+            $blobstore_connectionstring = $this->config['tig_blobstore_connectionstring'];
+            error_log('Using Blob Service: ' . $imageprocessor_fn_url);
+        } else {
+
+            error_log('Using Local Storage: ' . $url_base . $upload_dir);
         }
 
         $allowed_extensions = explode(', ', $this->config['tig_blobuploader_allowed_extensions']);
@@ -64,223 +81,331 @@ class blobuploader
         $max_original_height = (int) $this->config['tig_blobuploader_max_original_height'];
         $sized_width = (int) $this->config['tig_blobuploader_sized_width'];
         $sized_height = (int) $this->config['tig_blobuploader_sized_height'];
+        $thumbnail_width = (int) $this->config['tig_blobuploader_thumbnail_width'];
+        $thumbnail_height = (int) $this->config['tig_blobuploader_thumbnail_height'];
 
-        //error_log('request: ' . print_r( $this->request, true));
+        error_log('Sizes: ' . json_encode([
+            'max_original_width' => $max_original_width,
+            'max_original_height' => $max_original_height,
+            'sized_width' => $sized_width,
+            'sized_height' => $sized_height,
+            'thumbnail_width' => $thumbnail_width,
+            'thumbnail_height' => $thumbnail_height,
+        ]));
 
         // Access the input property directly
         $input = (array) $this->request;
 
+        // pretty print input
+        //error_log('Input: ' . json_encode($input, JSON_PRETTY_PRINT));
 
         $files = $input["\0*\0input"][5]['image'];
 
-        //error_log('files: ' . print_r($files, true));
-
         // Check if a file is being uploaded
-        if (empty($files))
-        {
+        if (empty($files)) {
             error_log('Error: No file specified.');
-            return new Response('{"error": "No file specified."}', 400, ['Content-Type' => 'application/json']);
+            $this->endPerfLog('upload', 'No file specified');
+            return $this->errorResponse('No file specified.', 400);
         }
 
         $response_data = [];
-
-        // Normalize the $files structure for consistent processing
-        if (!isset($files['name'][0])) {
-            // If $files is not an array of files, wrap it in an array
-            $files = [$files];
-        } else {
-            // Reformat the files array to use associative keys
-            $files = array_map(function($name, $full_path, $type, $tmp_name, $error, $size) {
-                return compact('name', 'full_path', 'type', 'tmp_name', 'error', 'size');
-            }, (array)$files['name'], (array)$files['full_path'], (array)$files['type'], (array)$files['tmp_name'], (array)$files['error'], (array)$files['size']);
-        }
-
-        //error_log('files: ' . print_r($files, true));
+        $files = $this->normalizeFiles($files);
 
         foreach ($files as $file_to_upload) {
-            error_log('Processing file: ' . $file_to_upload['name']);
+            if (isset($file_to_upload['error']) && $file_to_upload['error'] === 0) {
+                if ($use_blob_service) {
+                    $response_data[] = $this->processSingleFileRemote(
+                        $imageprocessor_fn_url,
+                        $imageprocessor_appid,
+                        $blobstore_connectionstring,
+                        $file_to_upload,
+                        $upload_dir,
+                        $url_base,
+                        $allowed_extensions,
+                        $max_original_width,
+                        $max_original_height,
+                        $sized_width,
+                        $sized_height,
+                        $thumbnail_width,
+                        $thumbnail_height,
+                    );
 
-            if (isset($file_to_upload['error']) && $file_to_upload['error'] == 0) {
-                // Validate the file type
-                $ext = strtolower(pathinfo($file_to_upload['name'], PATHINFO_EXTENSION));
-                if (!in_array($ext, $allowed_extensions))
-                {
-                    $response_data[] = ['error' => 'Invalid file type: ' . htmlspecialchars($file_to_upload['name'])];
-                    error_log('Error uploading file. $response_data[] = ' . json_encode($response_data));
-                    continue;
-                }
-
-                // Validate that the uploaded file is an image
-                try
-                {
-                    $imagick = new \Imagick();
-
-                    if ($ext === 'heic')
-                    {
-                        //error_log('heic file detected');
-                        // Need to copy the tmp file to a file with .heic extension and use that
-                        $heic_file = $file_to_upload['tmp_name'] . '.heic';
-                        //error_log('Copying ' . $file_to_upload['tmp_name'] . ' to ' . $heic_file);
-                        copy($file_to_upload['tmp_name'], $heic_file);
-                        $file_to_upload['tmp_name'] = $heic_file;
-                    }
-
-                    error_log('Reading image file: ' . $file_to_upload['tmp_name']);
-                    $imagick->readImage($file_to_upload['tmp_name']);
-                }
-                catch (\ImagickException $e)
-                {
-                    $response_data[] = ['error' => 'Invalid image file: ' . htmlspecialchars($file_to_upload['name'] . ' (' . htmlspecialchars($file_to_upload['tmp_name']) . ')')];
-                    error_log('Error uploading file. $response_data[] = ' . json_encode($response_data) . ' (' . $e->getMessage() . ')');
-                    continue;
-                }
-
-                // Measure time taken for hashing
-                $start_time = microtime(true);
-
-                // Generate an MD5 hash on the first 500KB of the image file
-                $file_handle = fopen($file_to_upload['tmp_name'], 'rb');
-                $file_data = fread($file_handle, 500 * 1024); // Read the first 500KB
-                fclose($file_handle);
-                $image_hash = substr(md5($file_data), 0, 16); // 16 characters long
-
-                $end_time = microtime(true);
-                $hash_time = $end_time - $start_time;
-                error_log('Hashing time: ' . $hash_time . ' seconds');
-
-                // Create user-specific directory if it doesn't exist
-                $user_upload_dir = $upload_dir . $this->user->data['user_id'];
-                if (!is_dir($user_upload_dir)) {
-                    mkdir($user_upload_dir, 0777, true);
-                }
-
-                // Check if the file already exists
-                $original_filename  = $image_hash . '_original.' . $ext;
-                $sized_filename     = $image_hash . '_sized.' . $ext;
-                $thumbnail_filename = $image_hash . '_thumbnail.' . $ext;
-
-                if (file_exists($user_upload_dir . '/' . $original_filename)) {
-                    error_log('File already exists: ' . $original_filename);
-                    $response_data[] = [
-                        'original' =>  $url_base . $this->user->data['user_id'] . '/' . $original_filename,
-                        'sized' =>  $url_base . $this->user->data['user_id'] . '/' . $sized_filename,
-                        'thumbnail' => $url_base . $this->user->data['user_id']  . '/' .$thumbnail_filename,
-                    ];
-                    continue;
-                }
-
-                // Measure time taken for HEIC to JPG conversion
-                if ($ext === 'heic')
-                {
-                    $start_time = microtime(true);
-
-                    $imagick->setImageFormat('jpg');
-                    $ext = 'jpg';
-                    $file_to_upload['name'] = pathinfo($file_to_upload['name'], PATHINFO_FILENAME) . '.jpg';
-
-                    $end_time = microtime(true);
-                    $conversion_time = $end_time - $start_time;
-                    error_log('HEIC to JPG conversion time: ' . $conversion_time . ' seconds');
-                }
-
-                try {
-                    if ($ext === 'gif') {
-
-                        // Handle GIF files
-                        $start_time = microtime(true);
-                        $imagick = $imagick->coalesceImages();
-                        foreach ($imagick as $frame) {
-                            $this->resizeImageWithOrientation($frame, $max_original_width, $max_original_height);
-                        }
-                        $imagick = $imagick->deconstructImages();
-                        $imagick->writeImages($user_upload_dir . '/' . $original_filename, true);
-                        $end_time = microtime(true);
-                        error_log('Creating GIF _original time: ' . $end_time - $start_time . ' seconds');
-
-                        $start_time = microtime(true);
-                        $sized = $imagick->coalesceImages();
-                        foreach ($sized as $frame) {
-                            $this->resizeImageWithOrientation($frame, $sized_width, $sized_height);
-                        }
-                        $sized = $sized->deconstructImages();
-                        $sized->writeImages($user_upload_dir . '/' . $sized_filename, true);
-                        $end_time = microtime(true);
-                        error_log('Creating GIF _sized time: ' . $end_time - $start_time . ' seconds');
-
-                        $start_time = microtime(true);
-                        $thumbnail = $imagick->coalesceImages();
-                        foreach ($thumbnail as $frame) {
-                            $this->resizeImageWithOrientation($frame, 300, 300); // Assuming 300x300 for thumbnail
-                        }
-                        $thumbnail = $thumbnail->deconstructImages();
-                        $thumbnail->writeImages($user_upload_dir . '/' . $thumbnail_filename, true);
-                        $end_time = microtime(true);
-                        error_log('Creating GIF _thumbnail time: ' . $end_time - $start_time . ' seconds');
-
-                        $thumbnail->clear();
-                        $sized->clear();
-                        $imagick->clear();
-                    } else {
-
-                        // Handle non-GIF files
-                        $start_time = microtime(true);
-                        $this->resizeImageWithOrientation($imagick, $max_original_width, $max_original_height);
-                        $imagick->writeImage($user_upload_dir . '/' . $original_filename);
-                        $end_time = microtime(true);
-                        error_log('Creating _original time: ' .  $end_time - $start_time . ' seconds');
-
-                        $start_time = microtime(true);
-                        $sized = clone $imagick;
-                        $this->resizeImageWithOrientation($sized, $sized_width, $sized_height);
-                        $sized->writeImage($user_upload_dir . '/' . $sized_filename);
-                        $end_time = microtime(true);
-                        error_log('Creating _sized time: ' .  $end_time - $start_time . ' seconds');
-
-                        $start_time = microtime(true);
-                        $thumbnail = clone $imagick;
-                        $this->resizeImageWithOrientation($thumbnail, 300, 300); // Assuming 300x300 for thumbnail
-                        $thumbnail->writeImage($user_upload_dir . '/' . $thumbnail_filename);
-                        $end_time = microtime(true);
-                        error_log('Creating _thumnail time: ' .  $end_time - $start_time . ' seconds');
-
-                        $thumbnail->clear();
-                        $sized->clear();
-                        $imagick->clear();
-                    }
-
-                    $response_data[] = [
-                        'original' =>  $url_base . $this->user->data['user_id'] . '/' . $original_filename,
-                        'sized' =>  $url_base . $this->user->data['user_id'] . '/' . $sized_filename,
-                        'thumbnail' => $url_base . $this->user->data['user_id']  . '/' .$thumbnail_filename,
-                    ];
-                } catch (\Exception $e) {
-                    $response_data[] = ['error' => 'Image processing failed for ' . $file_to_upload['name'] . ': ' . $e->getMessage()];
-                    error_log('Error uploading file. $response_data[] = ' . json_encode($response_data));
+                } else {
+                    $response_data[] = $this->processSingleFileLocal(
+                        $file_to_upload,
+                        $upload_dir,
+                        $url_base,
+                        $allowed_extensions,
+                        $max_original_width,
+                        $max_original_height,
+                        $sized_width,
+                        $sized_height,
+                        $thumbnail_width,
+                        $thumbnail_height,
+                    );
                 }
             } else {
-                // Error uploading the file
-                error_log('Error uploading the file: ' . $file_to_upload['error']);
+                error_log('Error uploading the file: ' . json_encode($file_to_upload));
             }
         }
 
-        error_log('response_data: ' . json_encode($response_data));
-
+        //error_log('response_data: ' . json_encode($response_data));
+        $this->endPerfLog('upload', 'Finished processing upload');
         return new Response(json_encode($response_data), 200, ['Content-Type' => 'application/json']);
     }
 
-    private function resizeImageWithOrientation($imagick, $maxWidth, $maxHeight)
-    {
-        $width = $imagick->getImageWidth();
-        $height = $imagick->getImageHeight();
+    private function processSingleFileRemote(
+        $imageprocessor_fn_url,
+        $imageprocessor_appid,
+        $blobstore_connectionstring,
+        $file_to_upload,
+        $subdir,
+        $url_base,
+        $allowed_extensions,
+        $max_original_width,
+        $max_original_height,
+        $sized_width,
+        $sized_height,
+        $thumbnail_width,
+        $thumbnail_height
+    ) {
+        $this->startPerfLog('processSingleFileRemote', 'Start processing single file: ' . $file_to_upload['name']);
+    
+        $ext = strtolower(pathinfo($file_to_upload['name'], PATHINFO_EXTENSION));
+        if (!in_array($ext, $allowed_extensions)) {
+            $error = 'Invalid file type: ' . htmlspecialchars($file_to_upload['name']);
+            error_log($error);
+            $this->endPerfLog('processSingleFile', $error);
+            return ['error' => $error];
+        }
 
-        if ($width > $height) {
-            if ($width > $maxWidth) {
-                $imagick->resizeImage($maxWidth, 0, \Imagick::FILTER_LANCZOS, 1);
+        $deDupe = true;
+        $useHashForFileName = true;
+    
+        // Prepare form data for multipart submission
+        $formData = [
+            'file' => new \CURLFile($file_to_upload['tmp_name'], $file_to_upload['type'], $file_to_upload['name']),
+            'fileName' => $file_to_upload['name'],
+            'blobContainer' => '$web', // Set your blob container
+            'blobConnectionString' => $blobstore_connectionstring,
+            'subDirectory' => $subdir . $this->user->data['user_id'] . '/', // Set the subdirectory where the image will be stored
+            'useHashForFileName' =>  $useHashForFileName ? 'true' : 'false', 
+            'deDupe' =>  $deDupe ? 'true' : 'false', 
+            'originalWidth' => $max_original_width,
+            'originalHeight' => $max_original_height,
+            'sizedWidth' => $sized_width,
+            'sizedHeight' => $sized_height,
+            'thumbnailWidth' => $thumbnail_width,
+            'thumbnailHeight' => $thumbnail_height,
+            'extension' => $ext,
+        ];
+    
+        $this->startPerfLog("curl_init", "Initialize cURL");
+        // Initialize cURL
+        $ch = curl_init();
+        $this->endPerfLog("curl_init", "cURL initialized");
+    
+        // Set cURL options
+        curl_setopt($ch, CURLOPT_URL, $imageprocessor_fn_url . ($imageprocessor_appid ? "?code=$imageprocessor_appid" : ""));
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $formData);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2_0);
+        curl_setopt($ch, CURLOPT_FORBID_REUSE, false);
+        curl_setopt($ch, CURLOPT_TCP_KEEPALIVE, 1);
+
+        curl_setopt($ch, CURLOPT_VERBOSE, true);
+
+        // Execute the request and capture the response
+        $this->startPerfLog("curl_exec", "Execute cURL request");
+        $response = curl_exec($ch);
+        $this->endPerfLog("curl_exec", "cURL request executed");
+
+        $info = curl_getinfo($ch);
+        error_log('cURL Timing: ' . json_encode([
+            'namelookup_time' => $info['namelookup_time'],
+            'connect_time' => $info['connect_time'],
+            'pretransfer_time' => $info['pretransfer_time'],
+            'starttransfer_time' => $info['starttransfer_time'],
+            'total_time' => $info['total_time'],
+        ]));
+
+    
+        // Dump curl info for debugging
+        //error_log('Curl info: ' . json_encode(curl_getinfo($ch)));
+    
+        // Check for cURL errors
+        if (curl_errno($ch)) {
+            $error = curl_error($ch);
+            curl_close($ch);
+            error_log('Error processing file remotely: ' . $error);
+            return ['error' => 'Error processing file remotely: ' . $error];
+        }
+    
+        // Close cURL session
+        curl_close($ch);
+    
+        // Handle the response
+        if ($response) {
+            if ($decodedResponse = json_decode($response, true)) {
+                // The function will return a URL that may not be accessible to the public.
+                // Use $url_base to create public URLs.
+                $decodedResponse['original'] = $url_base . $subdir . $this->user->data['user_id'] . '/' . basename($decodedResponse['original']);
+                $decodedResponse['sized'] = $url_base . $subdir . $this->user->data['user_id'] . '/' . basename($decodedResponse['sized']);
+                $decodedResponse['thumbnail'] = $url_base . $subdir . $this->user->data['user_id'] . '/' . basename($decodedResponse['thumbnail']);
+    
+                error_log('Decoded Response: ' . json_encode($decodedResponse));
+                return $decodedResponse;
+            } else {
+                error_log('Non-JSON Response: ' . $response);
+                return ['error' => $response];
             }
         } else {
-            if ($height > $maxHeight) {
-                $imagick->resizeImage(0, $maxHeight, \Imagick::FILTER_LANCZOS, 1);
+            error_log('Empty Response: No data received from server.');
+            return ['error' => 'No response received from server.'];
+        }
+    }
+    
+
+    private function processSingleFileLocal(
+        $file_to_upload,
+        $upload_dir,
+        $url_base,
+        $allowed_extensions,
+        $max_original_width,
+        $max_original_height,
+        $sized_width,
+        $sized_height,
+        $thumbnail_width,
+        $thumbnail_height
+    ) {
+        $this->startPerfLog('processSingleFileLocal', 'Start processing single file: ' . $file_to_upload['name']);
+
+        $ext = strtolower(pathinfo($file_to_upload['name'], PATHINFO_EXTENSION));
+        if (!in_array($ext, $allowed_extensions)) {
+            $error = 'Invalid file type: ' . htmlspecialchars($file_to_upload['name']);
+            error_log($error);
+            $this->endPerfLog('processSingleFile', $error);
+            return ['error' => $error];
+        }
+
+        try {
+            $imagick = new \Imagick();
+
+            if ($ext === 'heic') {
+                $heic_file = $file_to_upload['tmp_name'] . '.heic';
+                copy($file_to_upload['tmp_name'], $heic_file);
+                $file_to_upload['tmp_name'] = $heic_file;
             }
+
+            $imagick->readImage($file_to_upload['tmp_name']);
+        } catch (\ImagickException $e) {
+            $error = 'Invalid image file: ' . htmlspecialchars($file_to_upload['name']) . ' (' . $e->getMessage() . ')';
+            $this->endPerfLog('processSingleFile', $error);
+            return ['error' => $error];
+        }
+
+        // If $url_base has a leading slash, remove it
+        if (substr($url_base, 0, 1) === '/') {
+            $url_base = substr($url_base, 1);
+        }
+
+        $image_hash = $this->generateImageHash($file_to_upload['tmp_name']);
+        $user_upload_dir = $url_base . $upload_dir . $this->user->data['user_id'];
+        if (!is_dir($user_upload_dir)) {
+            mkdir($user_upload_dir, 0777, true);
+        }
+
+        error_log('User upload dir: ' . $user_upload_dir);
+
+        $original_filename = $image_hash . '_original.' . $ext;
+        $sized_filename = $image_hash . '_sized.' . $ext;
+        $thumbnail_filename = $image_hash . '_thumbnail.' . $ext;
+
+        if (file_exists($user_upload_dir . '/' . $original_filename)) {
+            $this->endPerfLog('processSingleFile', 'File exists.');
+            return [
+                'original' => '/' . $user_upload_dir . '/' . $original_filename,
+                'sized' => '/' . $user_upload_dir . '/' . $sized_filename,
+                'thumbnail' => '/' . $user_upload_dir . '/' . $thumbnail_filename,
+            ];
+        }
+
+        if ($ext === 'heic') {
+            $imagick->setImageFormat('jpg');
+            $ext = 'jpg';
+        }
+
+        $sizes = [
+            'original' => [$max_original_width, $max_original_height],
+            'sized' => [$sized_width, $sized_height],
+            'thumbnail' => [$thumbnail_width, $thumbnail_height],
+        ];
+
+        try {
+            if ($ext === 'gif') {
+                $results = $this->imageProcessor->handleGifProcessing($imagick, $sizes, $user_upload_dir, $image_hash);
+            } else {
+                $results = $this->imageProcessor->handleImageProcessing($imagick, $sizes, $user_upload_dir, $image_hash, $ext);
+            }
+            $imagick->clear();
+        } catch (\Exception $e) {
+            $error = 'Image processing failed for ' . $file_to_upload['name'] . ': ' . $e->getMessage();
+            $this->endPerfLog('processSingleFile', $error);
+            return ['error' => $error];
+        }
+
+        $this->endPerfLog('processSingleFileLocal', 'Finished.');
+
+        return [
+            'original' => '/' . $user_upload_dir . '/' . basename($results['original']),
+            'sized' => '/' . $user_upload_dir . '/' . basename($results['sized']),
+            'thumbnail' => '/' . $user_upload_dir . '/' . basename($results['thumbnail']),
+        ];
+    }
+
+    private function generateImageHash($file_path)
+    {
+        $this->startPerfLog('generateImageHash', 'Start');
+
+        $file_handle = fopen($file_path, 'rb');
+        $file_data = fread($file_handle, 500 * 1024);
+        fclose($file_handle);
+        $hash = substr(md5($file_data), 0, 16);
+        $this->endPerfLog('generateImageHash', 'Finished.');
+        return $hash;
+    }
+
+    private function normalizeFiles($files)
+    {
+        if (!isset($files['name'][0])) {
+            return [$files];
+        }
+
+        return array_map(function ($name, $tmp_name, $type, $error, $size) {
+            return compact('name', 'tmp_name', 'type', 'error', 'size');
+        }, (array) $files['name'], (array) $files['tmp_name'], (array) $files['type'], (array) $files['error'], (array) $files['size']);
+    }
+
+    private function errorResponse($message, $status = 400)
+    {
+        return new Response(json_encode(['error' => $message]), $status, ['Content-Type' => 'application/json']);
+    }
+
+    private function startPerfLog($key, $message)
+    {
+        $GLOBALS['perf_log'][$key] = microtime(true);
+        error_log("[START $key] $message");
+    }
+
+    private function endPerfLog($key, $message)
+    {
+        if (isset($GLOBALS['perf_log'][$key])) {
+            $elapsed = microtime(true) - $GLOBALS['perf_log'][$key];
+            error_log("[END $key] $message | Elapsed: " . number_format($elapsed, 4) . " seconds");
+            unset($GLOBALS['perf_log'][$key]);
+        } else {
+            error_log("[END $key] $message | No start time recorded.");
         }
     }
 }

@@ -105,7 +105,16 @@ class acp_controller
                 // Set the options the user configured, using defaults if not provided
 
                 $this->config_text->set('tig_blobuploader_explain_text', $this->request->variable('explain_text', $current_explain_text));
+                $this->config->set('tig_use_blob_service', $this->request->variable('use_blob_service', $this->config['tig_use_blob_service']));
+
+                $this->config->set('tig_imageprocessor_fn_url', $this->request->variable('imageprocessor_fn_url', $this->config['tig_imageprocessor_fn_url']));
+                $this->config->set('tig_imageprocessor_appid', $this->request->variable('imageprocessor_appid', $this->config['tig_imageprocessor_appid']));
+                $this->config->set('tig_blobstore_connectionstring', $this->request->variable('blobstore_connectionstring', $this->config['tig_blobstore_connectionstring']));
+
+                $this->config->set('tig_blobuploader_mount_dir', $this->request->variable('blob_mount_directory', $this->config['tig_blobuploader_mount_dir']));
+
                 $this->config->set('tig_blobuploader_url_base', $this->request->variable('url_base', $this->config['tig_blobuploader_url_base']));
+
                 $this->config->set('tig_blobuploader_allowed_extensions', $this->request->variable('allowed_extensions', $this->config['tig_blobuploader_allowed_extensions']));
                 $this->config->set('tig_blobuploader_max_original_width', $this->request->variable('max_original_width', $this->config['tig_blobuploader_max_original_width']));
                 $this->config->set('tig_blobuploader_max_original_height', $this->request->variable('max_original_height', $this->config['tig_blobuploader_max_original_height']));
@@ -136,7 +145,15 @@ class acp_controller
             //error_log('BLOB_MOUNT_DIRECTORY: ' . $this->config['tig_blobuploader_mount_dir']),
 
             'EXPLAIN_TEXT' => $current_explain_text,
+
+            'USE_BLOB_SERVICE' => $this->config['tig_use_blob_service'],
+            'IMAGEPROCESSOR_FN_URL' => $this->config['tig_imageprocessor_fn_url'],
+            'IMAGEPROCESSOR_APPID' => $this->config['tig_imageprocessor_appid'],
+
+            'BLOBSTORE_CONNECTIONSTRING' => $this->config['tig_blobstore_connectionstring'],
+            
             'URL_BASE' => $this->config['tig_blobuploader_url_base'],
+
             'ALLOWED_EXTENSIONS' => $this->config['tig_blobuploader_allowed_extensions'],
             'MAX_ORIGINAL_WIDTH' => $this->config['tig_blobuploader_max_original_width'],
             'MAX_ORIGINAL_HEIGHT' => $this->config['tig_blobuploader_max_original_height'],

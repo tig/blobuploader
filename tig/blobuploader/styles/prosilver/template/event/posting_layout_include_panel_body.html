@@ -227,5 +227,20 @@
     </div>
 </div>
 
+<script type="importmap">
+    {
+      "imports": {
+        "heic-to": "https://cdn.jsdelivr.net/npm/heic-to@1.1.5/dist/heic-to.min.js"
+      }
+    }
+</script>
 
-<script src="ext/tig/blobuploader/styles/prosilver/template/js/blobuploader_ui.js"></script>
+<script type="module">
+    // Pass maxWidth and maxHeight from server-side to client-side
+    window.acpSettings = {
+        maxWidth: '{{ MAX_ORIGINAL_WIDTH }}',
+        maxHeight: '{{ MAX_ORIGINAL_HEIGHT }}'
+    };
+</script>
+
+<script type="module" src="ext/tig/blobuploader/styles/prosilver/template/js/posting_layout_include_panel_body.js"></script>

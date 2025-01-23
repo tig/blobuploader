@@ -20,12 +20,37 @@
         </dl>
 
         <dl>
+            <dt><label for="use_blob_service">{{ lang('ACP_BLOBUPLOADER_USE_BLOBSERVICE') }}{{ lang('COLON') }}</label><br /><span>{{ lang('ACP_BLOBUPLOADER_USE_BLOBSERVICE_EXPLAIN') }}</span></dt>
+            <dd>
+                <input type="radio" id="use_blob_service_yes" name="use_blob_service" value="1" {% if USE_BLOB_SERVICE %}checked{% endif %} />
+                <label for="use_blob_service_yes">{{ lang('YES') }}</label>
+                <input type="radio" id="use_blob_service_no" name="use_blob_service" value="0" {% if not USE_BLOB_SERVICE %}checked{% endif %} />
+                <label for="use_blob_service_no">{{ lang('NO') }}</label>
+            </dd>
+        </dl>
+
+        <fieldset id="blob_service_settings" {% if not USE_BLOB_SERVICE %}style="display: none;"{% endif %}>
+            <dl>
+                <dt><label for="imageprocessor_fn_url">{{ lang('ACP_BLOBUPLOADER_IMAGEPROCESSOR_FN_URL') }}{{ lang('COLON') }}</label><br /><span>{{ lang('ACP_BLOBUPLOADER_IMAGEPROCESSOR_FN_URL_EXPLAIN') }}</span></dt>
+                <dd><input type="text" id="imageprocessor_fn_url" name="imageprocessor_fn_url" value="{{ IMAGEPROCESSOR_FN_URL }}" maxlength="255" style="width: 100%;" /></dd>
+            </dl>
+            <dl>
+                <dt><label for="imageprocessor_appid">{{ lang('ACP_BLOBUPLOADER_IMAGEPROCESSOR_APPID') }}{{ lang('COLON') }}</label><br /><span>{{ lang('ACP_BLOBUPLOADER_IMAGEPROCESSOR_APPID_EXPLAIN') }}</span></dt>
+                <dd><input type="text" id="imageprocessor_appid" name="imageprocessor_appid" value="{{ IMAGEPROCESSOR_APPID }}" maxlength="255" style="width: 100%;" /></dd>
+            </dl>
+            <dl>
+                <dt><label for="blobstore_connectionstring">{{ lang('ACP_BLOBUPLOADER_BLOBSTORE_CONNECTIONSTRING') }}{{ lang('COLON') }}</label><br /><span>{{ lang('ACP_BLOBUPLOADER_BLOBSTORE_CONNECTIONSTRING_EXPLAIN') }}</span></dt>
+                <dd><input type="text" id="blobstore_connectionstring" name="blobstore_connectionstring" value="{{ BLOBSTORE_CONNECTIONSTRING }}" maxlength="255" style="width: 100%;" /></dd>
+            </dl>
+        </fieldset>
+
+        <dl>
             <dt><label for="blob_mount_directory">{{ lang('ACP_BLOBUPLOADER_BLOB_MOUNT_DIRECTORY') }}{{ lang('COLON') }}</label><br /><span>{{ lang('ACP_BLOBUPLOADER_BLOB_MOUNT_DIRECTORY_EXPLAIN') }}</span></dt>
             <dd><input type="text" id="blob_mount_directory" name="blob_mount_directory" value="{{ BLOB_MOUNT_DIRECTORY }}" maxlength="255" style="width: 100%;" /></dd>
         </dl>
 
         <dl>
-            <dt><label for="blob_url_base">{{ lang('ACP_BLOBUPLOADER_URL_BASE') }}{{ lang('COLON') }}</label><br /><span>{{ lang('ACP_BLOBUPLOADER_URL_BASE_EXPLAIN') }}</span></dt>
+            <dt><label for="url_base">{{ lang('ACP_BLOBUPLOADER_URL_BASE') }}{{ lang('COLON') }}</label><br /><span>{{ lang('ACP_BLOBUPLOADER_URL_BASE_EXPLAIN') }}</span></dt>
             <dd><input type="text" id="url_base" name="url_base" value="{{ URL_BASE }}" maxlength="255" style="width: 100%;" /></dd>
         </dl>
 
@@ -74,3 +99,6 @@
 </form>
 
 {% include 'overall_footer.html' %}
+
+
+<script src="/ext/tig/blobuploader/styles/prosilver/template/js/acp_blobuploader_body.js"></script>

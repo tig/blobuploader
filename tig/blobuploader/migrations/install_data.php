@@ -50,8 +50,14 @@ class install_data extends \phpbb\db\migration\migration
 		//error_log('install_data.php: update_data()');
 		return [
 			// Add new config table settings
+			['config.add', ['tig_use_blob_service', true]],
+			['config.add', ['tig_imageprocessor_fn_url', 'https://myfunctionapp.azurewebsites.net/api/']],
+			['config.add', ['tig_imageprocessor_appid', '<Azure Function AppId>']],
+			['config.add', ['tig_blobstore_connectionstring', '<Azure Blob Storage connectionstring>']],
+
             ['config.add', ['tig_blobuploader_mount_dir', 'images/uploads/']],
 			['config.add', ['tig_blobuploader_url_base', 'https://myforum.z13.web.core.windows.net/']],
+
             ['config.add', ['tig_blobuploader_allowed_extensions', 'jpg, jpeg, png, gif, heic']],
             ['config.add', ['tig_blobuploader_max_original_width', '3840']],
             ['config.add', ['tig_blobuploader_max_original_height', '2160']],
