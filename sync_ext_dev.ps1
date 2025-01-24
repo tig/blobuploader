@@ -1,6 +1,6 @@
 # Define source and target directories
 $SourceDir = "./tig/blobuploader/"
-$TargetDir = "/var/www/html/phpbb/ext/tig/blobuploader/"
+$TargetDir = "/var/www/html/phpbb_dev/ext/tig/blobuploader/"
 
 # Rsync options
 #$RsyncOptions = "-av --delete"
