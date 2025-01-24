@@ -39,11 +39,11 @@ $lang = array_merge($lang, [
 	'BLOGUPLOADER_PANEL_TITLE'			=> 'Uploader',
 	'BLOBUPLOADER_UPLOADER_PANEL_EXPLAIN' => 'Here you can upload images.',
 
-	'BLOBUPLOADER_CHOOSE_FILES_EXPLAIN' => 'Click the Choose Files button to select images to upload. You can upload multiple images at once.',
+	'BLOBUPLOADER_CHOOSE_FILES_EXPLAIN' => 'Click the Choose Files button to select one or more images to upload.',
 	'BLOBUPLOADER_CHOOSE_FILES' => 'Choose files',
 
 	'BLOBUPLOADER_FILES_EXPLAIN' => 'Click on the thumbnail or the copy button to copy the BBcode to the clipboard for pasting into your post.',
-	'BLOBUPLOADER_COPY_ALL_EXPLAIN' => 'Click here to copy the BBcodes for all uploaded images to the clipboard  ',
+	'BLOBUPLOADER_COPY_ALL_EXPLAIN' => 'Copy BBcodes for all images below to the clipboard  ',
 	'BLOBUPLOADED_FILES' => 'Uploaded files',
 
     'BLOBUPLOADER_ORIGINAL_PREFIX' => '_original',

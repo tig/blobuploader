@@ -61,8 +61,8 @@ class install_data extends \phpbb\db\migration\migration
             ['config.add', ['tig_blobuploader_allowed_extensions', 'jpg, jpeg, png, gif, heic']],
             ['config.add', ['tig_blobuploader_max_original_width', '3840']],
             ['config.add', ['tig_blobuploader_max_original_height', '2160']],
-            ['config.add', ['tig_blobuploader_sized_width', '1920']],
-            ['config.add', ['tig_blobuploader_sized_height', '1080']],
+            ['config.add', ['tig_blobuploader_sized_width', '1280']],
+            ['config.add', ['tig_blobuploader_sized_height', '1024']],
             ['config.add', ['tig_blobuploader_thumbnail_width', '300']],
             ['config.add', ['tig_blobuploader_thumbnail_height', '300']],
 
