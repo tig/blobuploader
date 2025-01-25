@@ -28,12 +28,14 @@
 
     tr.blobuploader {
         max-width: 100%;
-        /* Ensure it doesn't exceed the parent width */
+        /* Ensure  doesn't exceed the parent width */
+        border-bottom: 1px solid #120404;
     }
 
     table.blobuploader {
         max-width: 100%;
         /* Ensure it doesn't exceed the parent width */
+        margin-bottom: 3px;
     }
 
     dd#uploaded-files {
@@ -67,15 +69,16 @@
         display: flex; /* Use flexbox to align items */
         align-items: center; /* Vertically center items */
         margin: 0;
-        margin-left: 5px; /* Space between the box and the button */
+        margin-left: 2px; /* Space between the box and the button */
+        margin-bottom: 2px;
+        font-family: inherit;
+        font-size: .9em;
     }
 
     .box {
-        font-size: smaller;
-        font-family: inherit;
         border: 1px solid #ccc;
-        padding: 5px;
-        margin-right: 5px;
+        padding: 3px;
+        margin-right: 0px;
         /* Space between the box and the button */
         margin-left: 5px;
         /* Space between the box and the button */
@@ -103,7 +106,7 @@
         /* Add horizontal scrolling for extremely long content */
         box-sizing: border-box;
         /* Include padding and border in width calculations */
-        padding: 5px;
+        padding: 2px;
         /* Optional: add some padding for better readability */
         border: 1px solid #ccc;
         /* Optional: add a border for distinction */
@@ -131,16 +134,27 @@
         }
     }
 
-    #copy-all-bbcodes-link {
+    .insert-copy-all-bbcodes,
+    p.insert-copy-all-bbcodes {
         cursor: pointer;
         color: #007bff;
-        font-size: smaller;
+        margin: 0;
+        padding:0;
+        margin-bottom: 0;
+        line-height: 1em;
+        font-size: inherit;
+    }
+
+    .insert-copy-all-bbcodes .fa {
+        color: #007bff;
+        font-size: larger;
     }
 
     .copy-button {
+        color: #007bff;
         margin-left: 5px;
         cursor: pointer;
-        font-size:larger;
+        font-size: small;
     }
 
     .loading-spinner {
@@ -188,10 +202,15 @@
             <dl class="blobuploader blobuploader-hide">
                 <dt>
                     <label for="uploaded">{L_BLOBUPLOADED_FILES}</label>
-                    <!-- Add the "Copy BBCodes for all images" link -->
-                    <dd class="copy-all-bbcodes">
-                        <a href="#" id="copy-all-bbcodes-link">{L_BLOBUPLOADER_COPY_ALL_EXPLAIN}<i class="fa fa-clipboard"></i></a>
-                    </dd>                
+                    <!-- Add the "Insert BBCodes for all images" link -->
+                    <dd>
+                        <p class="insert-copy-all-bbcodes" >
+                         <a class="insert-copy-all-bbcodes"  href="#" id="insert-all-bbcodes-link"><i class="fa fa-edit"></i> {L_BLOBUPLOADER_INSERT_ALL_EXPLAIN}</a>
+                        </p>
+                        <p class="insert-copy-all-bbcodes">
+                         <a class="insert-copy-all-bbcodes"  href="#" id="copy-all-bbcodes-link"><i class="fa fa-clipboard"></i> {L_BLOBUPLOADER_COPY_ALL_EXPLAIN}</a>
+                        </p>
+                </dd>                
                 </dt>
                 <dd class="blobuploader" id="uploaded-files">
                     <!-- Dynamically injected content goes here -->

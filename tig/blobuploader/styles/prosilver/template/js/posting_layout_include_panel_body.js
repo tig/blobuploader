@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const formElement = document.getElementById('postform');
     const hiddenField = document.getElementById('uploaded-files-field');
     const copyAllLink = document.getElementById('copy-all-bbcodes-link');
+    const insertAllLink = document.getElementById('insert-all-bbcodes-link');
 
     // If no CKEDitor, add a drop handler for the default editor
     if (!window.CKEDITOR) {
@@ -21,7 +22,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // This method is defined by blobuploader
             try {
-                await window.uploadDroppedFiles( event.dataTransfer.files);
+                await window.uploadDroppedFiles(event.dataTransfer.files);
                 console.log('Files uploaded successfully.');
             } catch (error) {
                 console.error('Error uploading files:', error);
@@ -74,6 +75,38 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
     }
+
+    // Add event listener for the "Insert all BBcodes" link
+    if (insertAllLink) {
+        insertAllLink.addEventListener('click', function (event) {
+            event.preventDefault(); // Prevent default link behavior
+            const storedFiles = getStoredFiles(hiddenField);
+            const allBBcodes = storedFiles
+                .filter(file => !file.error) // Skip files with errors
+                .map(file => `[url=${file.original}]\n [img]${file.sized}[/img]\n[/url]\n`)
+                .join('\n');
+
+            // Get CKEDITOR
+            var instances_names = Object.keys(CKEDITOR.instances),
+                editor = CKEDITOR.instances[instances_names[0]];
+            if (editor) {
+                if (editor.mode === 'wysiwyg') {
+                    editor.insertText(allBBcodes);
+                    editor.setMode('source');
+                    editor.setMode('wysiwyg');
+                } else {
+                    console.log('Editor mode is not WYSIWYG');
+                }
+            } else {
+                // Copy the BBCode tag to the clipboard if CKEDITOR is not available
+                navigator.clipboard.writeText(allBBcodes).then(() => {
+                    console.log('Copied to clipboard');
+                }).catch(err => {
+                    console.error('Failed to copy:', err);
+                });
+            }
+        });
+    }
 });
 
 
@@ -117,7 +150,7 @@ async function uploadDroppedFiles(files) {
     // if CKEDITOR is not defined or not in WYSIWYG mode, log an error and return
     // Get ckeditor instance
     var instances_names = Object.keys(CKEDITOR.instances),
-    editor = CKEDITOR.instances[instances_names[0]];
+        editor = CKEDITOR.instances[instances_names[0]];
     if (editor && editor.mode === 'source') {
         console.log('CKEDITOR is in source mode. Cannot insert BBCode.');
         return;
@@ -138,7 +171,7 @@ async function uploadDroppedFiles(files) {
                 // Insert the raw BBCode directly as plain text
                 if (editor) {
                     editor.insertText(imgTag);
-                } else{
+                } else {
                     // Find the first textarea in the document
                     const textArea = document.querySelector('textarea');
                     if (textArea) {
@@ -160,15 +193,15 @@ async function uploadDroppedFiles(files) {
 
     if (editor) {
         // Hack and switch to source mode and back to WYSIWYG to refresh
-        editor.setMode( 'source' );
-        editor.setMode( 'wysiwyg' );
+        editor.setMode('source');
+        editor.setMode('wysiwyg');
     }
 
     // Remove duplicates
     const uniqueFiles = removeDuplicateFiles(storedFiles);
-    
+
     // Update the hidden input field
-    updateHiddenField(hiddenField, uniqueFiles);  
+    updateHiddenField(hiddenField, uniqueFiles);
 }
 
 // Handle file uploads
@@ -419,18 +452,6 @@ function displayUploadedFiles(files, container) {
             errorMessage.textContent = 'Error: ' + fileData.error;
             infoCell.appendChild(errorMessage);
         } else {
-            // Create a container for the URL and copy button
-            const urlContainer = document.createElement('div');
-            urlContainer.classList.add('box-container');
-
-            const anchorTag = document.createElement('pre');
-            anchorTag.textContent = fileData.sized;
-            anchorTag.classList.add('box');
-
-            const copyButton = createCopyButton(fileData.sized, 'Copy URL to Clipboard');
-            urlContainer.appendChild(anchorTag);
-            urlContainer.appendChild(copyButton);
-
             // Create a container for the BBCode tag and copy button
             const tagContainer = document.createElement('div');
             tagContainer.classList.add('box-container');
@@ -440,44 +461,34 @@ function displayUploadedFiles(files, container) {
             preTag.textContent = bbcodeTag;
             preTag.classList.add('box');
 
+            const insertTagButton = createInsertButton(bbcodeTag, 'Insert BBCode into editor');
             const copyTagButton = createCopyButton(bbcodeTag, 'Copy BBCode to Clipboard');
-            tagContainer.appendChild(preTag);
+            tagContainer.appendChild(insertTagButton);
             tagContainer.appendChild(copyTagButton);
+            tagContainer.appendChild(preTag);
+
+            // Create a container for the URL and copy button
+            const urlContainer = document.createElement('div');
+            urlContainer.classList.add('box-container');
+
+            const anchorTag = document.createElement('pre');
+            anchorTag.textContent = fileData.sized;
+            anchorTag.classList.add('box');
+            const insertButton = createInsertButton(fileData.sized, 'Insert URL into editor');
+            const copyButton = createCopyButton(fileData.sized, 'Copy URL to Clipboard');
+
+            urlContainer.appendChild(insertButton);
+            urlContainer.appendChild(copyButton);
+            urlContainer.appendChild(anchorTag);
 
             thumbnail.addEventListener('click', (event) => {
                 event.preventDefault();
-
-                // Get CKEDITOR
-                var instances_names = Object.keys(CKEDITOR.instances),
-                    editor = CKEDITOR.instances[instances_names[0]];
-                if (editor) {
-                    if (editor.mode === 'wysiwyg') {
-                        editor.insertText(bbcodeTag);
-                    } else {
-                        console.log('Editor mode is not WYSIWYG');
-                        // var current_text = editor.getData();
-                        // editor.setData(current_text + bbcodeTag);
-
-                        // var raw_textarea = document.getElementsByClassName('cke_source');
-                        // if (raw_textarea) {
-                        //     raw_textarea[0].focus();
-                        // }
-                    }
-
-                } else {
-                    // Copy the BBCode tag to the clipboard if CKEDITOR is not available
-                    navigator.clipboard.writeText(bbcodeTag).then(() => {
-                        console.log('Copied to clipboard');
-
-                    }).catch(err => {
-                        console.error('Failed to copy:', err);
-                    });
-                }
+                insertIntoEditor(bbcodeTag);
             });
 
             // Append the URL container and tag container to the info cell
-            infoCell.appendChild(urlContainer);
             infoCell.appendChild(tagContainer);
+            infoCell.appendChild(urlContainer);
         }
 
         // Append cells to the table row
@@ -493,31 +504,34 @@ function displayUploadedFiles(files, container) {
     });
 }
 
-// Create file info container for URLs and tags
-function createFileInfoContainer(content, title, isBBCode = false) {
-    const container = document.createElement('div');
-    container.classList.add('box-container');
+function insertIntoEditor(toInsert) {
+    // Get CKEDITOR
+    var instances_names = Object.keys(CKEDITOR.instances),
+        editor = CKEDITOR.instances[instances_names[0]];
+    if (editor) {
+        if (editor.mode === 'wysiwyg') {
+            editor.insertText(toInsert);
+            editor.setMode('source');
+            editor.setMode('wysiwyg');
+        } else {
+            console.log('Editor mode is not WYSIWYG');
+        }
 
-    const displayElement = isBBCode ? document.createElement('pre') : document.createElement('a');
-    if (isBBCode) {
-        displayElement.textContent = content;
     } else {
-        displayElement.href = content;
-        displayElement.textContent = content;
-        displayElement.target = '_blank';
+        // Copy the BBCode tag to the clipboard if CKEDITOR is not available
+        navigator.clipboard.writeText(toInsert).then(() => {
+            console.log('Copied to clipboard');
+
+        }).catch(err => {
+            console.error('Failed to copy:', err);
+        });
     }
-
-    const copyButton = createCopyButton(content, title);
-    container.appendChild(displayElement);
-    container.appendChild(copyButton);
-
-    return container;
 }
 
 // Create copy button
 function createCopyButton(text, title) {
     const button = document.createElement('button');
-    button.innerHTML = '<i class="fa fa-clipboard"></i>';
+    button.innerHTML = '<i class="copy-button fa fa-clipboard"></i>';
     button.title = title;
     button.addEventListener('click', (event) => {
         event.preventDefault();
@@ -529,6 +543,19 @@ function createCopyButton(text, title) {
     });
     return button;
 }
+
+// Create copy button
+function createInsertButton(text, title) {
+    const button = document.createElement('button');
+    button.innerHTML = '<i class="copy-button fa fa-edit"></i>';
+    button.title = title;
+    button.addEventListener('click', (event) => {
+        event.preventDefault();
+        insertIntoEditor(text);
+    });
+    return button;
+}
+
 
 // Handle file upload errors
 function handleUploadError(response) {
@@ -577,13 +604,13 @@ async function handleFileDrop(evt, editor, loadingSpinner, uploadedFilesContaine
                     // Insert the raw BBCode directly as plain text
                     editor.insertText(imgTag);
 
-                    
-                   // Switch to source mode and back to WYSIWYG to refresh
-                   editor.execCommand('source');
-                   setTimeout(() => {
-                       editor.execCommand('source'); // Switch back to WYSIWYG
-                   }, 0);
-                                       
+
+                    // Switch to source mode and back to WYSIWYG to refresh
+                    editor.execCommand('source');
+                    setTimeout(() => {
+                        editor.execCommand('source'); // Switch back to WYSIWYG
+                    }, 0);
+
                 } else {
                     console.log('Drop ignored: Not in WYSIWYG mode.');
                 }
