@@ -46,21 +46,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 const xmlDoc = parser.parseFromString(textResponse, "application/xml");
 
                 // Process only `_thumbnail` blobs in the current batch
+                const blobElements = Array.from(xmlDoc.getElementsByTagName("Blob"));
                 blobElements.forEach(blob => {
                     const name = blob.getElementsByTagName("Name")[0]?.textContent;
                     const lastModified = blob.getElementsByTagName("Last-Modified")[0]?.textContent;
-                
+
                     if (name && lastModified && thumbnailBlobRegex.test(name)) {
-                        const match = name.match(thumbnailBlobRegex);
-                        const [, , hash, extension] = match;
-                
-                        const baseUrl = containerUrl.split('?')[0];
-                
                         blobs.push({
                             name,
                             lastModified: new Date(lastModified),
-                            url: `${baseUrl}/${name}`,
-                            originalUrl: `${baseUrl}/${name.replace('_thumbnail', '')}`
                         });
                     }
                 });
