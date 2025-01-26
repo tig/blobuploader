@@ -71,6 +71,8 @@ $lang = array_merge($lang, [
     'ACP_BLOBUPLOADER_IMAGEPROCESSOR_APPID_EXPLAIN' => 'The App ID of the Azure Function App used for processing images.',
     'ACP_BLOBUPLOADER_BLOBSTORE_CONNECTIONSTRING' => 'Blob Storage Connection String',
     'ACP_BLOBUPLOADER_BLOBSTORE_CONNECTIONSTRING_EXPLAIN' => 'The connection string for the Azure Blob Storage account.',
+    'ACP_BLOBUPLOADER_BLOBSTORE_SAS_URL' => 'Blob SAS URL',
+    'ACP_BLOBUPLOADER_BLOBSTORE_SAS_URL_EXPLAIN' => 'The URL of the Azure Blob Storage container with Shared Access Token.',
 
     'ACP_BLOBUPLOADER_BLOB_MOUNT_DIRECTORY' => 'Blob Sub-Directory',
     'ACP_BLOBUPLOADER_BLOB_MOUNT_DIRECTORY_EXPLAIN' => 'The sub-directory where blobs are uploaded to (e.g. uploads/).',
@@ -86,5 +88,18 @@ $lang = array_merge($lang, [
     'ACP_BLOBUPLOADER_SIZED_SIZE_EXPLAIN' => 'Width and height for the sized image.',
     'ACP_BLOBUPLOADER_THUMBNAIL_SIZE' => 'Thumbnail Size',
     'ACP_BLOBUPLOADER_THUMBNAIL_SIZE_EXPLAIN' => 'Width and height for the thumbnail image.',
+
+    'ACP_BLOBUPLOADER_ADMIN_GALLERY' => 'Most Recent Images',
+
+    // UCP
+    'UCP_BLOBUPLOADER'				=> 'Settings',
+	'UCP_BLOBUPLOADER_TITLE'		=> 'Uploader',
+	// 'UCP_BLOBUPLOADER_USER'			=> 'blobuploader user',
+	// 'UCP_BLOBUPLOADER_USER_EXPLAIN'	=> 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+	'UCP_BLOBUPLOADER_SAVED'		=> 'Settings have been saved successfully!',
+
+    'UCP_BLOBLOADER_PHOTO_GALLERY' => 'Photo Gallery',
+    'UCP_BLOBLOADER_PHOTO_GALLERY_EXPLAIN' => '%s uploaded images',
+
 
 ]);

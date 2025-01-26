@@ -20,6 +20,16 @@ services:
             - '@template'
             - '@user'
 
+    tig.blobuploader.controller.ucp:
+        class: tig\blobuploader\controller\ucp_controller
+        arguments:
+            - '@dbal.conn'
+            - '@language'
+            - '@request'
+            - '@template'
+            - '@user'
+            - '@config'
+
     tig.blobuploader.listener:
         class: tig\blobuploader\event\main_listener
         arguments:

@@ -110,6 +110,7 @@ class acp_controller
                 $this->config->set('tig_imageprocessor_fn_url', $this->request->variable('imageprocessor_fn_url', $this->config['tig_imageprocessor_fn_url']));
                 $this->config->set('tig_imageprocessor_appid', $this->request->variable('imageprocessor_appid', $this->config['tig_imageprocessor_appid']));
                 $this->config->set('tig_blobstore_connectionstring', $this->request->variable('blobstore_connectionstring', $this->config['tig_blobstore_connectionstring']));
+                $this->config->set('tig_blobstore_sas_url', $this->request->variable('blobstore_sas_url', $this->config['tig_blobstore_sas_url']));
 
                 $this->config->set('tig_blobuploader_mount_dir', $this->request->variable('blob_mount_directory', $this->config['tig_blobuploader_mount_dir']));
 
@@ -126,9 +127,10 @@ class acp_controller
                 // Add option settings change action to the admin log
                 $this->log->add('admin', $this->user->data['user_id'], $this->user->ip, 'LOG_ACP_BLOBUPLOADER_SETTINGS');
 
-                // Option settings have been updated and logged
-                // Confirm this to the user and provide link back to previous page
-                trigger_error($this->language->lang('ACP_BLOBUPLOADER_SETTING_SAVED'));
+                // Option settings have been updated
+				// Confirm this to the user and provide (automated) link back to previous page
+				$message = $this->language->lang('ACP_BLOBUPLOADER_SETTING_SAVED');
+				trigger_error($message);
             }
         }
 
@@ -151,6 +153,7 @@ class acp_controller
             'IMAGEPROCESSOR_APPID' => $this->config['tig_imageprocessor_appid'],
 
             'BLOBSTORE_CONNECTIONSTRING' => $this->config['tig_blobstore_connectionstring'],
+            'BLOBSTORE_SAS_URL' => $this->config['tig_blobstore_sas_url'],
             
             'URL_BASE' => $this->config['tig_blobuploader_url_base'],
 

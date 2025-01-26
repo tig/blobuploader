@@ -14,6 +14,7 @@ class install_data extends \phpbb\db\migration\migration
 {
 	public function effectively_installed()
 	{
+		error_log('install_data.php: effectively_installed() : ' . $this->config['tig_blobuploader_mount_dir']);
 		return $this->config->offsetExists('tig_blobuploader_mount_dir');
 	}
 
@@ -57,6 +58,7 @@ class install_data extends \phpbb\db\migration\migration
 
             ['config.add', ['tig_blobuploader_mount_dir', 'images/uploads/']],
 			['config.add', ['tig_blobuploader_url_base', 'https://myforum.z13.web.core.windows.net/']],
+			['config.add', ['tig_blobstore_sas_url', '']],
 
             ['config.add', ['tig_blobuploader_allowed_extensions', 'jpg, jpeg, png, gif, heic']],
             ['config.add', ['tig_blobuploader_max_original_width', '3840']],

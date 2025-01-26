@@ -42,6 +42,10 @@
                 <dt><label for="blobstore_connectionstring">{{ lang('ACP_BLOBUPLOADER_BLOBSTORE_CONNECTIONSTRING') }}{{ lang('COLON') }}</label><br /><span>{{ lang('ACP_BLOBUPLOADER_BLOBSTORE_CONNECTIONSTRING_EXPLAIN') }}</span></dt>
                 <dd><input type="text" id="blobstore_connectionstring" name="blobstore_connectionstring" value="{{ BLOBSTORE_CONNECTIONSTRING }}" maxlength="255" style="width: 100%;" /></dd>
             </dl>
+            <dl>
+                <dt><label for="blobstore_sas_url">{{ lang('ACP_BLOBUPLOADER_BLOBSTORE_SAS_URL') }}{{ lang('COLON') }}</label><br /><span>{{ lang('ACP_BLOBUPLOADER_BLOBSTORE_SAS_URL_EXPLAIN') }}</span></dt>
+                <dd><input type="text" id="blobstore_sas_url" name="blobstore_sas_url" value="{{ BLOBSTORE_SAS_URL }}" maxlength="255" style="width: 100%;" /></dd>
+            </dl>
         </fieldset>
 
         <dl>
@@ -98,7 +102,41 @@
 
 </form>
 
+<style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+    #recent-photos {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .photo-grid img {
+      width: 100px;
+      height: auto;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .photo-grid a {
+      display: inline-block;
+    }
+  </style>
+
+<!-- Admin photo gallery -->
+ <div id="blobuploader-admin-gallery" class="blobuploader-admin-gallery">
+    <h2>{{ lang('ACP_BLOBUPLOADER_ADMIN_GALLERY') }}</h2>
+    <div id="error-message" style="color: red;"></div>
+    <div id="recent-photos" class="photo-grid"></div>
+</div>
+
 {% include 'overall_footer.html' %}
 
+<script type="module">
+    // Pass maxWidth and maxHeight from server-side to client-side
+    window.blobStoreSASUrl = '{{ BLOBSTORE_SAS_URL }}';
+</script>
 
-<script src="/ext/tig/blobuploader/styles/prosilver/template/js/acp_blobuploader_body.js"></script>
+<script type="module" src="/ext/tig/blobuploader/styles/prosilver/template/js/acp_blobuploader_body.js"></script>
+

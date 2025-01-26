@@ -23,3 +23,30 @@
 /app/Config/core.php
 /app/Config/database.php
 /vendors/*
+
+# Node modules
+node_modules/
+
+# Build output
+dist/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Dependency directories
+jspm_packages/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# dotenv environment variables file
+.env
+
+# MacOS and Windows files
+.DS_Store
+Thumbs.db

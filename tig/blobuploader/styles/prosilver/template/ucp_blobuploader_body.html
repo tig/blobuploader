@@ -1,0 +1,89 @@
+{% include 'ucp_header.html' %}
+
+
+{% if U_UCP_ACTION ends with 'settings' %}
+<form id="tig_blobuploader_ucp" name="tig_blobuploader_ucp" method="post" action="{{ U_UCP_ACTION }}">
+	<h2>{{ lang('SETTINGS') }}</h2>
+	<div class="panel">
+		<div class="inner">
+			<fieldset>
+				{% if S_ERROR %}
+				<p class="error">{{ ERROR_MSG }}</p>
+				{% endif %}
+
+				<!-- <dl>
+					<dt><label for="user_blobuploader0">{{ lang('UCP_BLOBUPLOADER_USER') ~ lang('COLON') }}</label><br /><span>{{ lang('UCP_BLOBUPLOADER_USER_EXPLAIN') }}</span></dt>
+					<dd><label for="user_blobuploader1"><input type="radio" name="user_blobuploader" id="user_blobuploader1" value="1"{% if S_USER_BLOBUPLOADER %} checked="checked"{% endif %} /> {{ lang('YES') }}</label>
+						<label for="user_blobuploader0"><input type="radio" name="user_blobuploader" id="user_blobuploader0" value="0"{% if not S_USER_BLOBUPLOADER %} checked="checked"{% endif %} /> {{ lang('NO') }}</label></dd>
+				</dl> -->
+			</fieldset>
+		</div>
+	</div>
+	<fieldset>
+		<dl>
+			<dt>&nbsp;</dt>
+			<dd><input type="submit" name="submit" id="submit" class="button1" value="{{ lang('SUBMIT') }}"
+					tabindex="2" />&nbsp;
+				<input type="reset" name="reset" class="button2" value="{{ lang('RESET') }}" />
+			</dd>
+		</dl>
+		{{ S_HIDDEN_FIELDS }}
+		{{ S_FORM_TOKEN }}
+	</fieldset>
+</form>
+
+{% else %}
+<style>
+.photo-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.photo-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 5px;
+}
+
+.photo-box img {
+    width: 200px;
+    height: auto;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.copy-container {
+    margin-top: 0px;
+	font-family: inherit;
+}
+
+.copy-container button {
+    padding: 5px 5px;
+    cursor: pointer;
+}
+</style>
+
+<h2>{{ lang('UCP_BLOBLOADER_PHOTO_GALLERY') }}</h2>
+<div class="panel">
+	<div class="inner">
+		<p id="gallery_explain">{{ lang('UCP_BLOBLOADER_PHOTO_GALLERY_EXPLAIN') }}</p>
+		<div id="photo-grid" class="photo-grid">
+			<!-- Photos will be dynamically injected here -->
+		</div>
+	</div>
+</div>
+
+<script type="module">
+    // Pass maxWidth and maxHeight from server-side to client-side
+    window.blobStoreSASUrl = '{{ BLOBSTORE_SAS_URL }}';
+	window.userId = '{{ USER_ID }}';
+</script>
+
+<script type="module" src="/ext/tig/blobuploader/styles/prosilver/template/js/ucp_blobuploader_body.js"></script>
+
+{% endif %}
+
+
+{% include 'ucp_footer.html' %}
