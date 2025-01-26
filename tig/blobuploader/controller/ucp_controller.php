@@ -72,39 +72,39 @@ class ucp_controller
 		// Create a form key for preventing CSRF attacks
 		add_form_key('tig_blobuploader_ucp');
 
-		// Create an array to collect errors that will be output to the user
-		$errors = [];
+		// // Create an array to collect errors that will be output to the user
+		// $errors = [];
 
-		// Request the options the user can configure
-		$data = [
-			'user_blobuploader' => $this->request->variable('user_blobuploader', $this->user->data['user_blobuploader']),
-		];
+		// // Request the options the user can configure
+		// $data = [
+		// 	//'user_blobuploader' => $this->request->variable('user_blobuploader', $this->user->data['user_blobuploader']),
+		// ];
 
-		// Is the form being submitted to us?
-		if ($this->request->is_set_post('submit'))
-		{
-			// // Test if the submitted form is valid
-			// if (!check_form_key('tig_blobuploader_ucp'))
-			// {
-			// 	$errors[] = $this->language->lang('FORM_INVALID');
-			// }
+		// // Is the form being submitted to us?
+		// if ($this->request->is_set_post('submit'))
+		// {
+		// 	// // Test if the submitted form is valid
+		// 	// if (!check_form_key('tig_blobuploader_ucp'))
+		// 	// {
+		// 	// 	$errors[] = $this->language->lang('FORM_INVALID');
+		// 	// }
 
-			// // If no errors, process the form data
-			// if (empty($errors))
-			// {
-			// 	// Set the options the user configured
-			// 	$sql = 'UPDATE ' . USERS_TABLE . '
-			// 		SET ' . $this->db->sql_build_array('UPDATE', $data) . '
-			// 		WHERE user_id = ' . (int) $this->user->data['user_id'];
-			// 	$this->db->sql_query($sql);
+		// 	// // If no errors, process the form data
+		// 	// if (empty($errors))
+		// 	// {
+		// 	// 	// Set the options the user configured
+		// 	// 	$sql = 'UPDATE ' . USERS_TABLE . '
+		// 	// 		SET ' . $this->db->sql_build_array('UPDATE', $data) . '
+		// 	// 		WHERE user_id = ' . (int) $this->user->data['user_id'];
+		// 	// 	$this->db->sql_query($sql);
 
-			// 	// Option settings have been updated
-			// 	// Confirm this to the user and provide (automated) link back to previous page
-			// 	meta_refresh(3, $this->u_action);
-			// 	$message = $this->language->lang('UCP_BLOBUPLOADER_SAVED') . '<br /><br />' . $this->language->lang('RETURN_UCP', '<a href="' . $this->u_action . '">', '</a>');
-			// 	trigger_error($message);
-			// }
-		}
+		// 	// 	// Option settings have been updated
+		// 	// 	// Confirm this to the user and provide (automated) link back to previous page
+		// 	// 	meta_refresh(3, $this->u_action);
+		// 	// 	$message = $this->language->lang('UCP_BLOBUPLOADER_SAVED') . '<br /><br />' . $this->language->lang('RETURN_UCP', '<a href="' . $this->u_action . '">', '</a>');
+		// 	// 	trigger_error($message);
+		// 	// }
+		// }
 
 		$s_errors = !empty($errors);
 
