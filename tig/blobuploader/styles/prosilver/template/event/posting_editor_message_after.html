@@ -1,0 +1,270 @@
+<style>
+    .blobuploader-container {
+        margin: 5px 0;
+        padding: 5px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+        font-size: inherit;
+    }
+
+    p.blobuploader {
+        font-size: inherit;
+    }
+
+    p.blobuploader-explain {
+        font-size: inherit;
+        font-weight: bolder;
+        background-color: #a4d0fc;
+
+        /* center horizontally */
+        text-align: center;
+    }
+
+    #files-to-upload {
+        padding-bottom: 10px;
+        /* How do you center an input? */
+        display: block;
+        margin: 0 auto;
+
+    }
+
+    tr.blobuploader {
+        max-width: 100%;
+        /* Ensure  doesn't exceed the parent width */
+        border-bottom: 1px solid #afcedb;
+    }
+
+    table.blobuploader {
+        max-width: 100%;
+        /* Ensure it doesn't exceed the parent width */
+        margin-bottom: 3px;
+    }
+
+    #uploaded-files {
+        box-sizing: border-box;
+        min-width: 150px;
+        /* Minimum width for readability */
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        background-color: #ECF1F3;
+        max-width: 100%;
+        /* Ensure it fits within the container */
+        overflow-y: auto;
+        /* Allow scrolling if content exceeds height */
+        border: 1px solid #ccc;
+        padding: 10px;
+    }
+
+    /* Thumbnail styling */
+    .thumbnail {
+        flex-shrink: 0;
+        /* Prevent the thumbnail from shrinking */
+        width: 80px;
+        /* Fixed width */
+        height: auto;
+        /* Maintain aspect ratio */
+        object-fit: contain;
+        margin-right: 10px;
+    }
+
+    .box-container {
+        display: flex;
+        /* Use flexbox to align items */
+        align-items: center;
+        /* Vertically center items */
+        margin: 0;
+        margin-left: 2px;
+        /* Space between the box and the button */
+        margin-bottom: 2px;
+        font-family: inherit;
+        font-size: .9em;
+    }
+
+    .box {
+        /* border: 1px solid #ccc; */
+        padding: 3px;
+        margin-right: 0px;
+        /* Space between the box and the button */
+        margin-left: 5px;
+        /* Space between the box and the button */
+        max-width: 100%;
+        /* Restrict the width to the parent container */
+        word-wrap: break-word;
+        /* Break long words */
+        overflow-wrap: break-word;
+        white-space: normal;
+        /* Allow text to wrap to the next line */
+        box-sizing: border-box;
+    }
+
+    /* Ensure <pre> elements do not cause overflow */
+    .box-container pre.box {
+        max-width: 100%;
+        /* Ensure the <pre> element fits within the parent container */
+        white-space: pre-wrap;
+        /* Allow the text to wrap to the next line */
+        word-wrap: break-word;
+        /* Break long words if necessary */
+        overflow-wrap: anywhere;
+        /* Allow breaking on any character if needed */
+        overflow-x: auto;
+        /* Add horizontal scrolling for extremely long content */
+        box-sizing: border-box;
+        /* Include padding and border in width calculations */
+        padding: 2px;
+        /* Optional: add some padding for better readability */
+        /* border: 1px solid #ccc; */
+        /* Optional: add a border for distinction */
+        background-color: #f9f9f9;
+        /* Optional: add a background color */
+    }
+
+    /* Error message or additional content */
+    .error-message {
+        color: red;
+        margin-left: 10px;
+    }
+
+    /* Mobile adjustments */
+    @media (max-width: 768px) {
+        #uploaded-files dt {
+            flex-direction: column;
+            /* Stack items vertically */
+            white-space: normal;
+            /* Allow wrapping on smaller screens */
+        }
+
+        .thumbnail {
+            margin-bottom: 10px;
+        }
+    }
+
+    .insert-copy-all-bbcodes,
+    p.insert-copy-all-bbcodes {
+        cursor: pointer;
+        color: #013f81;
+        margin: 0;
+        padding: 0;
+        margin-bottom: 0;
+        line-height: 1em;
+        font-size: inherit;
+        /* center horizontally */
+        text-align: center;
+
+    }
+
+    .insert-copy-all-bbcodes .fa {
+        color: #013f81;
+        font-size: larger;
+    }
+
+    .copy-button {
+        color: #013f81;
+        margin-left: 5px;
+        cursor: pointer;
+        font-size: small;
+    }
+
+    .loading-spinner {
+        display: none;
+        /* Initially hidden */
+        text-align: center;
+        /* Center the spinner */
+        margin: 20px auto;
+    }
+
+    .loading-spinner img {
+        width: 50px;
+        /* Adjust the size as needed */
+        height: 50px;
+        /* Adjust the size as needed */
+    }
+
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+</style>
+
+<!-- hidden input field to the form to track uploaded files, for when Preview is pressed -->
+<input type="hidden" name="tig_blobuploader_uploaded_files" id="uploaded-files-field"
+    value="{TIG_BLOBUPLOADER_UPLOADED_FILES}">
+
+<div class="blobuploader-container">
+    <h3>{L_BLOGUPLOADER_PANEL_TITLE}</h3>
+    <p class="blobuploader-explain">{EXPLAIN_TEXT}</p>
+    <p class="blobuploader">{L_BLOBUPLOADER_UPLOADER_PANEL_EXPLAIN}</p>
+    <input type="file" name="uploader[]" id="files-to-upload" multiple />
+
+
+    <!-- Uploaded files section -->
+    <div class="blobuploader blobuploader-hide">
+        <p class="blobuploader">{L_BLOBUPLOADER_FILES_EXPLAIN}</p>
+        <!-- Add the "Insert BBCodes for all images" link -->
+        <div class="insert-copy-all-bbcodes">
+            <a class="insert-copy-all-bbcodes" href="#" id="insert-all-bbcodes-link"><i class="fa fa-edit"></i>
+                {L_BLOBUPLOADER_INSERT_ALL_EXPLAIN}</a>
+            &nbsp;&nbsp;&nbsp;
+            <a class="insert-copy-all-bbcodes" href="#" id="copy-all-bbcodes-link"><i class="fa fa-clipboard"></i>
+                {L_BLOBUPLOADER_COPY_ALL_EXPLAIN}</a>
+        </div>
+
+        <div class="blobuploader" id="uploaded-files">
+            <!-- Dynamically injected content goes here -->
+            <!-- 
+                    <table class="blobuploader">
+                        <tr>
+                            <td>
+                                <img src="/ext/tig/blobuploader/images/upload-error-image.jpg" alt="Error" style="width: 100px; height: auto; margin-bottom: 5px;">
+                            </td>
+                            <td>
+                                <div class="error-message">Error: Invalid file type: TunerStudioAppDebug.txt</div>
+                            </td>
+                        </tr>
+                    </table>
+                    <table class="blobuploader">
+                        <tr>
+                            <td>
+                                <img src="/ext/tig/blobuploader/images/upload-error-image.jpg" alt="Error" style="width: 100px; height: auto; margin-bottom: 5px;">
+                            </td>
+                            <td>
+                                <div class="error-message">Error: Invalid file type: Repair_Order_Instruction_Sheet_04-2011.pdf
+
+                                </div>
+                            </td>
+                        </tr>
+                    -->
+        </div>
+    </div>
+
+    <!-- Loading spinner -->
+    <div class="loading-spinner">
+        <img src="ext/tig/blobuploader/images/roundel.gif" alt="Loading...">
+    </div>
+</div>
+
+<script type="importmap">
+    {
+      "imports": {
+        "heic-to": "https://cdn.jsdelivr.net/npm/heic-to@1.1.5/dist/heic-to.min.js"
+      }
+    }
+</script>
+
+<script type="module">
+    // Pass maxWidth and maxHeight from server-side to client-side
+    window.acpSettings = {
+        maxWidth: '{{ MAX_ORIGINAL_WIDTH }}',
+        maxHeight: '{{ MAX_ORIGINAL_HEIGHT }}'
+    };
+    window.allowedExtensions = '{{ ALLOWED_EXTENSIONS }}';
+</script>
+
+<script type="module"
+    src="ext/tig/blobuploader/styles/prosilver/template/js/posting_layout_include_panel_body.js"></script>

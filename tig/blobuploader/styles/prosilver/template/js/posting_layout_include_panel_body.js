@@ -86,10 +86,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 .map(file => `[url=${file.original}]\n [img]${file.sized}[/img]\n[/url]\n`)
                 .join('\n');
 
-            // Get CKEDITOR
-            var instances_names = Object.keys(CKEDITOR.instances),
+            if (window.CKEDITOR) {
+                var instances_names = Object.keys(CKEDITOR.instances),
                 editor = CKEDITOR.instances[instances_names[0]];
-            if (editor) {
                 if (editor.mode === 'wysiwyg') {
                     editor.insertText(allBBcodes);
                     editor.setMode('source');
@@ -98,17 +97,28 @@ document.addEventListener('DOMContentLoaded', function () {
                     console.log('Editor mode is not WYSIWYG');
                 }
             } else {
-                // Copy the BBCode tag to the clipboard if CKEDITOR is not available
-                navigator.clipboard.writeText(allBBcodes).then(() => {
-                    console.log('Copied to clipboard');
-                }).catch(err => {
-                    console.error('Failed to copy:', err);
-                });
+                // Find the first textarea in the document
+                const textArea = document.querySelector('textarea');
+                if (textArea) {
+                    // Get the current insertion point
+                    const selectionStart = textArea.selectionStart;
+                    const selectionEnd = textArea.selectionEnd;
+                    // Insert the BBCode at the current insertion point
+                    textArea.value = textArea.value.substring(0, selectionStart) + allBBcodes + textArea.value.substring(selectionEnd);
+                    console.log('Inserted into editor');
+                }
             }
         });
     }
 });
 
+function showLoadingSpinner() {
+    document.querySelector('.loading-spinner').style.display = 'block';
+}
+
+function hideLoadingSpinner() {
+    document.querySelector('.loading-spinner').style.display = 'none';
+}
 
 // Restore uploaded files from the hidden input field
 function restoreUploadedFilesFromForm(hiddenField, container) {
@@ -147,13 +157,14 @@ async function uploadDroppedFiles(files) {
     const uploadedFilesContainer = document.getElementById('uploaded-files');
     const formElement = document.getElementById('postform');
 
-    // if CKEDITOR is not defined or not in WYSIWYG mode, log an error and return
-    // Get ckeditor instance
-    var instances_names = Object.keys(CKEDITOR.instances),
+    if (window.CKEDITOR) {
+        var instances_names = Object.keys(CKEDITOR.instances),
         editor = CKEDITOR.instances[instances_names[0]];
-    if (editor && editor.mode === 'source') {
-        console.log('CKEDITOR is in source mode. Cannot insert BBCode.');
-        return;
+
+       if (editor && editor.mode === 'source') {
+            console.log('CKEDITOR is in source mode. Cannot insert BBCode.');
+            return;
+        }
     }
 
     const storedFiles = getStoredFiles(hiddenField);
@@ -290,8 +301,8 @@ async function uploadSingleFile(file, loadingSpinner) {
     // Check if the file is an HEIC file and convert it to JPG
     if (await isHeic(file)) {
         try {
-            // Show the loading spinner
-            loadingSpinner.style.display = 'block';
+            showLoadingSpinner();
+
             const convertedBlob = await heicTo({
                 blob: file,
                 type: "image/jpeg",
@@ -306,8 +317,7 @@ async function uploadSingleFile(file, loadingSpinner) {
         } catch (error) {
             throw new Error('Error converting ' + file.name + ' to JPG: ' + error);
         } finally {
-            // Hide the loading spinner
-            loadingSpinner.style.display = 'none';
+            hideLoadingSpinner();
         }
     }
 
@@ -315,7 +325,7 @@ async function uploadSingleFile(file, loadingSpinner) {
     // skip gifs
     if (file.type !== 'image/gif') {
         try {
-            loadingSpinner.style.display = 'block';
+            showLoadingSpinner();
             const resizedBlob = await resizeImage(fileToUpload, maxWidth, maxHeight);
             fileToUpload = new File([resizedBlob], fileToUpload.name, { type: fileToUpload.type });
 
@@ -324,8 +334,7 @@ async function uploadSingleFile(file, loadingSpinner) {
         } catch (error) {
             throw new Error('Error resizing ' + file.name + ':' + error);
         } finally {
-            // Hide the loading spinner
-            loadingSpinner.style.display = 'none';
+            hideLoadingSpinner();
         }
     }
 
@@ -335,8 +344,7 @@ async function uploadSingleFile(file, loadingSpinner) {
     formData.append('image', fileToUpload, fileToUpload.name);
 
     try {
-        // Show the loading spinner
-        loadingSpinner.style.display = 'block';
+        showLoadingSpinner();
 
         const response = await fetch('/blobuploader', {
             method: 'POST',
@@ -397,11 +405,8 @@ async function uploadSingleFile(file, loadingSpinner) {
         console.groupEnd();
         return [];
     } finally {
-        // Hide the loading spinner
-        loadingSpinner.style.display = 'none';
+        hideLoadingSpinner();
     }
-
-
 }
 
 // Display uploaded files
@@ -444,7 +449,7 @@ function displayUploadedFiles(files, container) {
 
         if (fileData.error) {
             // Display error image
-            thumbnail.src = '/ext/tig/blobuploader/images/upload-error-image.jpg';
+            thumbnail.src = '/ext/tig/blobuploader/images/cel.gif';
             thumbnail.alt = 'Error';
         } else {
             // Display thumbnail image
@@ -517,10 +522,9 @@ function displayUploadedFiles(files, container) {
 }
 
 function insertIntoEditor(toInsert) {
-    // Get CKEDITOR
-    var instances_names = Object.keys(CKEDITOR.instances),
+    if (window.CKEDITOR) {
+        var instances_names = Object.keys(CKEDITOR.instances),
         editor = CKEDITOR.instances[instances_names[0]];
-    if (editor) {
         if (editor.mode === 'wysiwyg') {
             editor.insertText(toInsert);
             editor.setMode('source');
@@ -530,13 +534,16 @@ function insertIntoEditor(toInsert) {
         }
 
     } else {
-        // Copy the BBCode tag to the clipboard if CKEDITOR is not available
-        navigator.clipboard.writeText(toInsert).then(() => {
-            console.log('Copied to clipboard');
-
-        }).catch(err => {
-            console.error('Failed to copy:', err);
-        });
+        // Find the first textarea in the document
+        const textArea = document.querySelector('textarea');
+        if (textArea) {
+            // Get the current insertion point
+            const selectionStart = textArea.selectionStart;
+            const selectionEnd = textArea.selectionEnd;
+            // Insert the BBCode at the current insertion point
+            textArea.value = textArea.value.substring(0, selectionStart) + toInsert + textArea.value.substring(selectionEnd);
+            console.log('Inserted into editor');
+        }
     }
 }
 

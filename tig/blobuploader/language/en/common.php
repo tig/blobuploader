@@ -37,10 +37,9 @@ if (empty($lang) || !is_array($lang))
 $lang = array_merge($lang, [
 	// Uploader UI
 	'BLOGUPLOADER_PANEL_TITLE'			=> 'Uploader',
-	'BLOBUPLOADER_UPLOADER_PANEL_EXPLAIN' => 'Here you can upload images.',
+	'BLOBUPLOADER_UPLOADER_PANEL_EXPLAIN' => 'To upload files, either drag and drop images into the editor, or click the Choose Files button to select images to upload.',
 
 	'BLOBUPLOADER_CHOOSE_FILES_EXPLAIN' => 'Click the Choose Files button to select one or more images to upload.',
-	'BLOBUPLOADER_CHOOSE_FILES' => 'Choose files',
 
 	'BLOBUPLOADER_FILES_EXPLAIN' => 'Use the buttons below to insert the BBcodes into the editor, or copy to clipboard.',
 	'BLOBUPLOADER_INSERT_ALL_EXPLAIN' => 'Insert BBcodes for all images in editor  ',
