@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Create copy button
-    function createCopyButton(text, title) {
+    function createCopyButton(bbcode, title) {
         const container = document.createElement('div');
         container.className = 'copy-container';
 
@@ -112,7 +112,6 @@ document.addEventListener('DOMContentLoaded', function () {
         button.title = title;
         button.addEventListener('click', (event) => {
             event.preventDefault();
-            const bbcode = `[img]${text}[/img]`;
             navigator.clipboard.writeText(bbcode).then(() => {
                 console.log('Copied to clipboard');
             }).catch(err => {
