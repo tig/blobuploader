@@ -35,15 +35,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (name && lastModified && thumbnailBlobRegex.test(name)) {
                         const match = name.match(thumbnailBlobRegex);
                         const [, , hash, extension] = match;
-                
-                        const baseUrl = window.urlBase;
-                
+                                
                         blobs.push({
                             name,
                             lastModified: new Date(lastModified),
-                            url: `${baseUrl}/${name}`,
-                            originalUrl: `${baseUrl}/${name.replace('_thumbnail', '_original')}`,
-                            sizedUrl: `${baseUrl}/${name.replace('_thumbnail', '_sized')}`
+                            url: `${window.urlBase}${name}`,
+                            originalUrl: `${window.urlBase}${name.replace('_thumbnail', '_original')}`,
+                            sizedUrl: `${window.urlBase}${name.replace('_thumbnail', '_sized')}`
                         });
                     }
                 });
