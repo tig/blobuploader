@@ -248,21 +248,30 @@ class blobuploader
         // Handle the response
         if ($response) {
             if ($decodedResponse = json_decode($response, true)) {
+                error_log('Decoded Response: ' . json_encode($decodedResponse));
+
+                // If response message starts with Error
+                // How do i do startswith in php?
+                if (strpos($decodedResponse['message'], 'Error') === 0) {
+                    error_log('Error processing ' . $file_to_upload['name'] . ' remotely: ' . $decodedResponse['message']);
+                    return ['error' => 'Error processing ' . $file_to_upload['name'] . ' remotely: ' . $decodedResponse['message']];
+                }
+                
                 // The function will return a URL that may not be accessible to the public.
                 // Use $url_base to create public URLs.
                 $decodedResponse['original'] = $url_base . $subdir . $this->user->data['user_id'] . '/' . basename($decodedResponse['original']);
                 $decodedResponse['sized'] = $url_base . $subdir . $this->user->data['user_id'] . '/' . basename($decodedResponse['sized']);
                 $decodedResponse['thumbnail'] = $url_base . $subdir . $this->user->data['user_id'] . '/' . basename($decodedResponse['thumbnail']);
     
-                error_log('Decoded Response: ' . json_encode($decodedResponse));
+                error_log('Updated Decoded Response: ' . json_encode($decodedResponse));
                 return $decodedResponse;
             } else {
-                error_log('Non-JSON Response: ' . $response);
-                return ['error' => $response];
+                error_log('Error processing ' . $file_to_upload['name'] . ' remotely: non-JSON response received.');
+                return ['error' => 'Error processing ' . $file_to_upload['name'] . ' remotely: non-JSON response received.'];
             }
         } else {
             error_log('Empty Response: No data received from server.');
-            return ['error' => 'No response received from server.'];
+            return ['error' => 'Error processing ' . $file_to_upload['name'] . 'remotely: No response received from server.'];
         }
     }
     

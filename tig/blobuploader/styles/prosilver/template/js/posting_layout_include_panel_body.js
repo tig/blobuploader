@@ -209,10 +209,16 @@ async function uploadFiles(files, hiddenField, loadingSpinner, uploadedFilesCont
     const storedFiles = getStoredFiles(hiddenField);
 
     for (const file of files) {
-        const uploadedFile = await uploadSingleFile(file, loadingSpinner);
-        if (uploadedFile && uploadedFile.length > 0) {
-            //console.log('Uploaded file:', uploadedFile);
-            storedFiles.push(...uploadedFile); // Spread the array to merge it into storedFiles
+        try{
+            const uploadedFile = await uploadSingleFile(file, loadingSpinner);
+            if (uploadedFile && uploadedFile.length > 0) {
+                //console.log('Uploaded file:', uploadedFile);
+                storedFiles.push(...uploadedFile); // Spread the array to merge it into storedFiles
+            }
+        } catch (error) {
+            storedFiles.push({ error: error.message, name: file.name });
+        }
+        finally{
             displayUploadedFiles(storedFiles, uploadedFilesContainer);
         }
     }
@@ -276,6 +282,11 @@ async function uploadSingleFile(file, loadingSpinner) {
 
     let fileToUpload = file;
 
+    // If the extension is not in window.allowedExtensions, throw an error
+    if (!window.allowedExtensions.includes(file.name.split('.').pop().toLowerCase())) {
+        throw new Error('Error uploading ' + file.name + ' Only image files are supported.');
+    }
+
     // Check if the file is an HEIC file and convert it to JPG
     if (await isHeic(file)) {
         try {
@@ -287,18 +298,13 @@ async function uploadSingleFile(file, loadingSpinner) {
                 quality: 0.9
             })
 
-            // Log the converted blob details
-            //console.log('Converted Blob:', convertedBlob);
-
             // Create a new File object from the converted Blob
             const fileName = file.name.replace(/\.[^/.]+$/, ".jpg");
             const fileType = 'image/jpeg';
             fileToUpload = new File([convertedBlob], fileName, { type: fileType });
 
         } catch (error) {
-            console.error('Error converting HEIC file:', error);
-            alert('Error converting HEIC file to JPG.' + error);
-            return [];
+            throw new Error('Error converting ' + file.name + ' to JPG: ' + error);
         } finally {
             // Hide the loading spinner
             loadingSpinner.style.display = 'none';
@@ -306,20 +312,21 @@ async function uploadSingleFile(file, loadingSpinner) {
     }
 
     // Resize the image to a maximum resolution of 4K (3840x2160)
-    try {
-        loadingSpinner.style.display = 'block';
-        const resizedBlob = await resizeImage(fileToUpload, maxWidth, maxHeight);
-        fileToUpload = new File([resizedBlob], fileToUpload.name, { type: fileToUpload.type });
+    // skip gifs
+    if (file.type !== 'image/gif') {
+        try {
+            loadingSpinner.style.display = 'block';
+            const resizedBlob = await resizeImage(fileToUpload, maxWidth, maxHeight);
+            fileToUpload = new File([resizedBlob], fileToUpload.name, { type: fileToUpload.type });
 
-        // Log the resized File object details
-        console.log('Resized File object:', fileToUpload);
-    } catch (error) {
-        console.error('Error resizing image:' + error);
-        alert('Error resizing image. Please try a different file.');
-        return [];
-    } finally {
-        // Hide the loading spinner
-        loadingSpinner.style.display = 'none';
+            // Log the resized File object details
+            console.log('Resized File object:', fileToUpload);
+        } catch (error) {
+            throw new Error('Error resizing ' + file.name + ':' + error);
+        } finally {
+            // Hide the loading spinner
+            loadingSpinner.style.display = 'none';
+        }
     }
 
     console.log('fileToUpload:', fileToUpload);
@@ -336,11 +343,10 @@ async function uploadSingleFile(file, loadingSpinner) {
             body: formData
         });
 
+        // Log info about the response object
+        console.log('Response:', response);
+ 
         if (!response.ok) {
-            // Log info about the response object
-            console.log('Response status:', response.status);
-            console.log('Response status text:', response.statusText);
-
             if (response.status === 400) {
                 alert('Error uploading file: The size of the file may be too large.');
             } else if (response.status === 500) {
@@ -352,11 +358,14 @@ async function uploadSingleFile(file, loadingSpinner) {
             throw new Error('Network response was not ok');
         }
 
+
+
         const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
+            console.log('Response is JSON:', contentType);
             const result = await response.json();
             console.log('Upload result:', result);
-
+    
             return result.map(fileData => {
                 if (fileData.error) {
                     return { error: fileData.error, name: fileData.name };
@@ -373,6 +382,7 @@ async function uploadSingleFile(file, loadingSpinner) {
             console.error('Unexpected response format:', text);
             throw new Error('Unexpected response format');
         }
+
     } catch (error) {
         console.group('Exception from fetch');
         console.error('Message:', error.message);
@@ -390,6 +400,8 @@ async function uploadSingleFile(file, loadingSpinner) {
         // Hide the loading spinner
         loadingSpinner.style.display = 'none';
     }
+
+
 }
 
 // Display uploaded files
@@ -411,14 +423,14 @@ function displayUploadedFiles(files, container) {
     }
 
     files.forEach(fileData => {
-        if (fileData && fileData.original) {
-            //console.log('Displaying file:', fileData);
-            //console.log('Original:', fileData.original);
+        // if (fileData && fileData.original) {
+        //     //console.log('Displaying file:', fileData);
+        //     //console.log('Original:', fileData.original);
 
-            // Render the file details here
-        } else {
-            console.warn('File data is not as expected:', fileData);
-        }
+        //     // Render the file details here
+        // } else {
+        //     console.warn('File data is not as expected:', fileData);
+        // }
 
         const tableRow = document.createElement('tr');
         tableRow.classList.add('blobuploader');
