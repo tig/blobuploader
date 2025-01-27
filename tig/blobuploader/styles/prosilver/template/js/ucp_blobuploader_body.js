@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         const match = name.match(thumbnailBlobRegex);
                         const [, , hash, extension] = match;
                 
-                        const baseUrl = containerUrl.split('?')[0];
+                        const baseUrl = window.urlBase;
                 
                         blobs.push({
                             name,

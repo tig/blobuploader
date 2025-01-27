@@ -119,6 +119,7 @@ class ucp_controller
 
             'BLOBSTORE_CONNECTIONSTRING' => $this->config['tig_blobstore_connectionstring'],
             'BLOBSTORE_SAS_URL' => $this->config['tig_blobstore_sas_url'],
+			'URL_BASE' => $this->config['tig_blobuploader_url_base'],
 
 			'USER_ID'		=> $this->user->data['user_id'],
            
