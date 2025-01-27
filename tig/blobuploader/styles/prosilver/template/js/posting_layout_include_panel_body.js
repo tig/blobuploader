@@ -449,7 +449,7 @@ function displayUploadedFiles(files, container) {
 
         if (fileData.error) {
             // Display error image
-            thumbnail.src = '/ext/tig/blobuploader/images/cel.gif';
+            thumbnail.src = '/ext/tig/blobuploader/images/hitwhilewarm.gif';
             thumbnail.alt = 'Error';
         } else {
             // Display thumbnail image
