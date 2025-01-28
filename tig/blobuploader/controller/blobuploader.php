@@ -12,6 +12,7 @@ namespace tig\blobuploader\controller;
 
 use Symfony\Component\HttpFoundation\Response;
 use tig\blobuploader\helpers\ImageProcessor;
+use phpbb\json_response;
 
 class blobuploader
 {
@@ -145,13 +146,29 @@ class blobuploader
                     );
                 }
             } else {
-                error_log('Error uploading the file: ' . json_encode($file_to_upload));
+                $this->endPerfLog('upload', 'Finished processing upload: Error uploading file'. json_encode($file_to_upload));
+                // Return an bad request response
+                return $this->errorResponse(json_encode($file_to_upload), 400);
             }
         }
 
-        //error_log('response_data: ' . json_encode($response_data));
+        error_log('response_data: ' . json_encode($response_data));
         $this->endPerfLog('upload', 'Finished processing upload');
-        return new Response(json_encode($response_data), 200, ['Content-Type' => 'application/json']);
+
+        $status = $response_data[0]['status'];
+        $response = $response_data[0]['response'];
+        $error = $response_data[0]['error'];
+
+        error_log('Status  : ' . $status);
+        error_log('Response: ' . json_encode($response));
+        error_log('Error   : ' . $error);
+
+        if ($status === 200) {
+            $response_obj = new json_response();
+            return $response_obj->send($response, $status);
+        } else {
+            return $this->errorResponse(['error'=>$error, 'message'=>$response], $status);
+        }
     }
 
     private function processSingleFileRemote(
@@ -176,7 +193,12 @@ class blobuploader
             $error = 'Invalid file type: ' . htmlspecialchars($file_to_upload['name']);
             error_log($error);
             $this->endPerfLog('processSingleFile', $error);
-            return ['error' => $error];
+            return 
+            [   
+                'status' => 400,
+                'response' => '',
+                'error' => $error
+            ];
         }
 
         $deDupe = true;
@@ -239,7 +261,12 @@ class blobuploader
             $error = curl_error($ch);
             curl_close($ch);
             error_log('Error processing file remotely: ' . $error);
-            return ['error' => 'Error processing file remotely: ' . $error];
+            return 
+            [   
+                'status' => 400,
+                'response' => 'Error processing file remotely',
+                'error' => $error
+            ];            
         }
     
         // Close cURL session
@@ -254,7 +281,12 @@ class blobuploader
                 // How do i do startswith in php?
                 if (strpos($decodedResponse['message'], 'Error') === 0) {
                     error_log('Error processing ' . $file_to_upload['name'] . ' remotely: ' . $decodedResponse['message']);
-                    return ['error' => 'Error processing ' . $file_to_upload['name'] . ' remotely: ' . $decodedResponse['message']];
+                    return 
+                    [   
+                        'status' => 400,
+                        'response' => $decodedResponse,
+                        'error' => 'Error processing ' . $file_to_upload['name'] . ' remotely: ' . $decodedResponse['message']
+                    ];
                 }
                 
                 // The function will return a URL that may not be accessible to the public.
@@ -264,14 +296,29 @@ class blobuploader
                 $decodedResponse['thumbnail'] = $url_base . $subdir . $this->user->data['user_id'] . '/' . basename($decodedResponse['thumbnail']);
     
                 error_log('Updated Decoded Response: ' . json_encode($decodedResponse));
-                return $decodedResponse;
-            } else {
+                return [
+                    'status' => 200,
+                    'error' => '',
+                    'response' => $decodedResponse
+                ];
+            } else 
+            {
                 error_log('Error processing ' . $file_to_upload['name'] . ' remotely: non-JSON response received.');
-                return ['error' => 'Error processing ' . $file_to_upload['name'] . ' remotely: non-JSON response received.'];
+                return 
+                [   
+                    'status' => 400,
+                    'response' => $response,
+                    'error' => 'Error processing ' . $file_to_upload['name'] . ' remotely: non-JSON response received.'
+                ];               
             }
         } else {
             error_log('Empty Response: No data received from server.');
-            return ['error' => 'Error processing ' . $file_to_upload['name'] . 'remotely: No response received from server.'];
+            return 
+            [   
+                'status' => 400,
+                'response' => '',
+                'error' => 'Error processing ' . $file_to_upload['name'] . ' remotely: No response received from server.'
+            ];              
         }
     }
     
