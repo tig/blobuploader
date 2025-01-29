@@ -206,7 +206,7 @@ function insertIntoEditor(uploadedFile) {
             var instances_names = Object.keys(CKEDITOR.instances),
             editor = CKEDITOR.instances[instances_names[0]];
             if (editor.mode === 'wysiwyg') {
-                editor.insertText(toInsert);
+                editor.insertText(imgTag);
                 editor.setMode('source');
                 editor.setMode('wysiwyg');
             } else {
