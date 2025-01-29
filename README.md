@@ -1,11 +1,23 @@
 # blobuploader
 PhpBB extension that provides file and photo uploading to a blob storage backend, like Amazon S3 or Azure Blob Storage.
 
+![demo](https://i.imgur.com/KvWCohn.gif)
+
 ## Current Status
 
 This extension was written for www.mye28.com, but I attempted to author it generically so it can be used on any PhpBB board.
 
 Issues that will make it difficult to deploy:
+
+### The extension doesn't actually build/package
+
+I've not actually done the work to package this extension up properly. I deploy it by simply copying the `./tig/blobuploader` folder to my PhpBB `./ext` folder.
+
+### CKEditor dependency
+
+www.mye28.com uses a bastardized version of [CKEditor 4](https://www.phpbb.com/customise/db/extension/ckeditor_for_phpbb/). It *should* degrade and work fine without CKEditor, but that's not been tested.
+
+For this to work with CKEditor, you'll need my mods to that extension which I've not yet put anywhere.
 
 ### blobuploader-imageprocessor
 
