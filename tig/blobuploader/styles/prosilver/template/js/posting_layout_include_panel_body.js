@@ -12,9 +12,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // If no CKEDitor, add a drop handler for the default editor
     if (!window.CKEDITOR) {
-        console.log('CKEditor not found. Adding drop handler for default editor.');
+        //console.log('CKEditor not found. Adding drop handler for default editor.');
         document.addEventListener('drop', async function (event) {
-            console.log('Document Drop event:', event.dataTransfer.files);
+            //console.log('Document Drop event:', event.dataTransfer.files);
 
             // Prevent default browser behavior
             event.preventDefault();
@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // This method is defined by blobuploader
             try {
                 await window.uploadDroppedFiles(event.dataTransfer.files);
-                console.log('Files uploaded successfully.');
+                //console.log('Files uploaded successfully.');
             } catch (error) {
                 console.error('Error uploading files:', error);
             }
@@ -46,7 +46,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         // Ensure the hidden field is updated before form submission
-        console.log('Form element found. Adding submit event listener.');
         formElement.addEventListener('submit', function () {
             const storedFiles = getStoredFiles(hiddenField);
             //console.log('Submitting form with files:', storedFiles);
@@ -103,7 +102,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     const selectionEnd = textArea.selectionEnd;
                     // Insert the BBCode at the current insertion point
                     textArea.value = textArea.value.substring(0, selectionStart) + allBBcodes + textArea.value.substring(selectionEnd);
-                    console.log('Inserted into editor');
+                    //console.log('Inserted into editor');
                 }
             }
         });
@@ -160,7 +159,7 @@ async function uploadDroppedFiles(files) {
         editor = CKEDITOR.instances[instances_names[0]];
 
        if (editor && editor.mode === 'source') {
-            console.log('CKEDITOR is in source mode. Cannot insert BBCode.');
+            console.warn('CKEDITOR is in source mode. Cannot insert BBCode.');
            // return;
         }
     }
@@ -168,7 +167,7 @@ async function uploadDroppedFiles(files) {
     for (const file of files) {
         try {
             const uploadedFile = await uploadSingleFile(file);
-            console.log('Uploaded Dropped file:', uploadedFile);
+            // console.log('Uploaded Dropped file:', uploadedFile);
             storedFiles.push(uploadedFile); // Spread the array to merge it into storedFiles
             displayUploadedFiles(storedFiles, uploadedFilesContainer);
 
@@ -193,9 +192,13 @@ async function uploadDroppedFiles(files) {
                 console.error('Error inserting [img] tag:', error);
             }
         } catch (error) {
-            console.error('Error uploading file:', error);
+            storedFiles.push({ error: error.error, name: file.name });           
         }
-        console.log('Stored files:', storedFiles);
+        finally{
+            // Remove duplicates
+            const uniqueFiles = removeDuplicateFiles(storedFiles);
+            displayUploadedFiles(uniqueFiles, uploadedFilesContainer);
+        }
     }
 
     if (editor) {
@@ -206,7 +209,6 @@ async function uploadDroppedFiles(files) {
 
     // Remove duplicates
     const uniqueFiles = removeDuplicateFiles(storedFiles);
-
     // Update the hidden input field
     updateHiddenField(hiddenField, uniqueFiles);
 
@@ -220,10 +222,10 @@ async function uploadFiles(files, hiddenField, uploadedFilesContainer) {
     for (const file of files) {
         try{
             const uploadedFile = await uploadSingleFile(file);
-            console.log('Uploaded file:', uploadedFile);
+            //console.log('Uploaded file:', uploadedFile);
             storedFiles.push(uploadedFile); // Spread the array to merge it into storedFiles
         } catch (error) {
-            storedFiles.push({ error: error.message, name: file.name });
+            storedFiles.push({ error: error.error, name: file.name });
         }
         finally{
             // Remove duplicates
@@ -293,7 +295,7 @@ async function uploadSingleFile(file) {
 
     // If the extension is not in window.allowedExtensions, throw an error
     if (!window.allowedExtensions.includes(file.name.split('.').pop().toLowerCase())) {
-        throw new Error('Error uploading ' + file.name + ' Only image files are supported.');
+        throw new Error('Error uploading ' + file.name + '. Only image files are supported.');
     }
 
     // Check if the file is an HEIC file and convert it to JPG
@@ -324,11 +326,12 @@ async function uploadSingleFile(file) {
     if (file.type !== 'image/gif') {
         try {
             showLoadingSpinner();
+            const originalSize = fileToUpload.size;
             const resizedBlob = await resizeImage(fileToUpload, maxWidth, maxHeight);
             fileToUpload = new File([resizedBlob], fileToUpload.name, { type: fileToUpload.type });
 
             // Log the resized File object details
-            console.log('Resized File object:', fileToUpload);
+            console.log(`Resized ${file.name} from ${(originalSize/1024).toFixed(2)}MB to ${(fileToUpload.size / 1024).toFixed(2)}MB`);
         } catch (error) {
             throw new Error('Error resizing ' + file.name + ':' + error);
         } finally {
@@ -366,11 +369,20 @@ async function uploadSingleFile(file) {
             case 400:
                 const errResult = await response.json();
 
-                console.log('Error uploading file:', errResult.error);
+                // console.log('Error uploading file - errResult.error:', errResult.error);
+                // console.log('Error uploading file - errResult.error.error:', errResult.error.error);
+                // console.log('Error uploading file - errResult.error.message.message:', errResult.error.message.message);
+
+                var error = errResult.error.error;
+                var message = errResult.error.message.message;
+                if (errResult.error.message.exception){
+                    // console.log('Error uploading file - errResult.error.message.exception:', errResult.error.message.exception);
+                    error = error + ' ' + errResult.error.message.exception;
+                }
 
                 return {
-                    error: errResult.error.error,
-                    message: errResult.error.message
+                    error: error,
+                    message: message
                 };
 
             case 500:
@@ -447,7 +459,7 @@ function displayUploadedFiles(files, container) {
             const errorMessage = document.createElement('div');
             errorMessage.classList.add('error-message');
             errorMessage.classList.add('box-container');
-            errorMessage.textContent = 'Error: ' + fileData.error;
+            errorMessage.textContent = fileData.error;
             infoCell.appendChild(errorMessage);
         } else {
             // Create a container for the BBCode tag and copy button

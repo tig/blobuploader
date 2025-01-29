@@ -285,7 +285,7 @@ class blobuploader
                     [   
                         'status' => 400,
                         'response' => $decodedResponse,
-                        'error' => 'Error processing ' . $file_to_upload['name'] . ' remotely: ' . $decodedResponse['message']
+                        'error' => 'Error processing ' . $file_to_upload['name'] . ' remotely.'
                     ];
                 }
                 
