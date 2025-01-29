@@ -1,7 +1,7 @@
 # blobuploader
 PhpBB extension that provides file and photo uploading to a blob storage backend, like Amazon S3 or Azure Blob Storage.
 
-![demo](https://i.imgur.com/KvWCohn.gif)
+![demo](https://github.com/user-attachments/assets/e1263539-d619-4ae3-abf5-99cf5a4a08b9)
 
 ## Current Status
 
