@@ -171,26 +171,8 @@ async function uploadDroppedFiles(files) {
             storedFiles.push(uploadedFile); // Spread the array to merge it into storedFiles
             displayUploadedFiles(storedFiles, uploadedFilesContainer);
 
-            // Create the BBCode for the image
-            const imgTag = '[url=' + uploadedFile.original + ']\n  [img]' + uploadedFile.sized + '[/img]\n[/url]\n';
-            try {
-                // Insert the raw BBCode directly as plain text
-                if (editor) {
-                    editor.insertText(imgTag);
-                } else {
-                    // Find the first textarea in the document
-                    const textArea = document.querySelector('textarea');
-                    if (textArea) {
-                        // Get the current insertion point
-                        const selectionStart = textArea.selectionStart;
-                        const selectionEnd = textArea.selectionEnd;
-                        // Insert the BBCode at the current insertion point
-                        textArea.value = textArea.value.substring(0, selectionStart) + imgTag + textArea.value.substring(selectionEnd);
-                    }
-                }
-            } catch (error) {
-                console.error('Error inserting [img] tag:', error);
-            }
+            insertIntoEditor(uploadedFile);
+           
         } catch (error) {
             storedFiles.push({ error: error.error, name: file.name });           
         }
@@ -215,6 +197,37 @@ async function uploadDroppedFiles(files) {
     return uniqueFiles;
 }
 
+function insertIntoEditor(uploadedFile) {
+    console.log('insertIntoEditor:', uploadedFile);
+ // Create the BBCode for the image
+    const imgTag = '[url=' + uploadedFile.original + ']\n  [img]' + uploadedFile.sized + '[/img]\n[/url]\n';
+    try {
+        if (window.CKEDITOR) {
+            var instances_names = Object.keys(CKEDITOR.instances),
+            editor = CKEDITOR.instances[instances_names[0]];
+            if (editor.mode === 'wysiwyg') {
+                editor.insertText(toInsert);
+                editor.setMode('source');
+                editor.setMode('wysiwyg');
+            } else {
+                console.log('Editor mode is not WYSIWYG');
+            }
+        } else {
+            // Find the first textarea in the document
+            const textArea = document.querySelector('textarea');
+            if (textArea) {
+                // Get the current insertion point
+                const selectionStart = textArea.selectionStart;
+                const selectionEnd = textArea.selectionEnd;
+                // Insert the BBCode at the current insertion point
+                textArea.value = textArea.value.substring(0, selectionStart) + imgTag + textArea.value.substring(selectionEnd);
+            }
+        }
+    } catch (error) {
+        console.error('Error inserting [img] tag:', error);
+    }
+}
+
 // Handle file uploads
 async function uploadFiles(files, hiddenField, uploadedFilesContainer) {
     const storedFiles = getStoredFiles(hiddenField);
@@ -222,14 +235,22 @@ async function uploadFiles(files, hiddenField, uploadedFilesContainer) {
     for (const file of files) {
         try{
             const uploadedFile = await uploadSingleFile(file);
-            //console.log('Uploaded file:', uploadedFile);
-            storedFiles.push(uploadedFile); // Spread the array to merge it into storedFiles
+
+            const autoInsert = document.getElementById('auto-insert-images');
+            const autoInsertValue = autoInsert ? autoInsert.checked : false;
+
+            if (autoInsertValue){
+                insertIntoEditor(uploadedFile);
+            }
+
+            storedFiles.push(uploadedFile); 
         } catch (error) {
             storedFiles.push({ error: error.error, name: file.name });
         }
         finally{
             // Remove duplicates
             const uniqueFiles = removeDuplicateFiles(storedFiles);
+            console.log('uniqueFiles:', uniqueFiles);
             displayUploadedFiles(uniqueFiles, uploadedFilesContainer);
         }
     }
@@ -413,7 +434,7 @@ async function uploadSingleFile(file) {
 // Display uploaded files
 function displayUploadedFiles(files, container) {
     container.innerHTML = '';
-    //console.log('Files passed to displayUploadedFiles:', files);
+    console.log('Files passed to displayUploadedFiles:', files);
 
     // hide/unhide all HTML elements with class blobuploader-hide depending on 
     // if there are files or not
@@ -471,8 +492,8 @@ function displayUploadedFiles(files, container) {
             preTag.textContent = bbcodeTag;
             preTag.classList.add('box');
 
-            const insertTagButton = createInsertButton(bbcodeTag, 'Insert BBCode into editor');
-            const copyTagButton = createCopyButton(bbcodeTag, 'Copy BBCode to Clipboard');
+            const insertTagButton = createInsertButton(fileData, 'Insert BBCode into editor');
+            const copyTagButton = createCopyButton(fileData, 'Copy BBCode to Clipboard');
             tagContainer.appendChild(insertTagButton);
             tagContainer.appendChild(copyTagButton);
             tagContainer.appendChild(preTag);
@@ -493,7 +514,7 @@ function displayUploadedFiles(files, container) {
 
             thumbnail.addEventListener('click', (event) => {
                 event.preventDefault();
-                insertIntoEditor(bbcodeTag);
+                insertIntoEditor(fileData);
             });
 
             // Append the URL container and tag container to the info cell
@@ -514,40 +535,15 @@ function displayUploadedFiles(files, container) {
     });
 }
 
-function insertIntoEditor(toInsert) {
-    if (window.CKEDITOR) {
-        var instances_names = Object.keys(CKEDITOR.instances),
-        editor = CKEDITOR.instances[instances_names[0]];
-        if (editor.mode === 'wysiwyg') {
-            editor.insertText(toInsert);
-            editor.setMode('source');
-            editor.setMode('wysiwyg');
-        } else {
-            console.log('Editor mode is not WYSIWYG');
-        }
-
-    } else {
-        // Find the first textarea in the document
-        const textArea = document.querySelector('textarea');
-        if (textArea) {
-            // Get the current insertion point
-            const selectionStart = textArea.selectionStart;
-            const selectionEnd = textArea.selectionEnd;
-            // Insert the BBCode at the current insertion point
-            textArea.value = textArea.value.substring(0, selectionStart) + toInsert + textArea.value.substring(selectionEnd);
-            console.log('Inserted into editor');
-        }
-    }
-}
 
 // Create copy button
-function createCopyButton(text, title) {
+function createCopyButton(fileData, title) {
     const button = document.createElement('button');
     button.innerHTML = '<i class="copy-button fa fa-clipboard"></i>';
     button.title = title;
     button.addEventListener('click', (event) => {
         event.preventDefault();
-        navigator.clipboard.writeText(text).then(() => {
+        navigator.clipboard.writeText(fileData.original).then(() => {
             console.log('Copied to clipboard');
         }).catch(err => {
             console.error('Failed to copy:', err);
@@ -557,13 +553,14 @@ function createCopyButton(text, title) {
 }
 
 // Create copy button
-function createInsertButton(text, title) {
+function createInsertButton(fileData, title) {
+    console.log('createInsertButton:', fileData);
     const button = document.createElement('button');
     button.innerHTML = '<i class="copy-button fa fa-edit"></i>';
     button.title = title;
     button.addEventListener('click', (event) => {
         event.preventDefault();
-        insertIntoEditor(text);
+        insertIntoEditor(fileData);
     });
     return button;
 }

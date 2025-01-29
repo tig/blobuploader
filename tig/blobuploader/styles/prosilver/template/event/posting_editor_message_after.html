@@ -21,12 +21,13 @@
         text-align: center;
     }
 
-    #files-to-upload {
-        padding-bottom: 10px;
+    .blobuploader-selection{
+        padding: 5px;
         /* How do you center an input? */
-        display: block;
         margin: 0 auto;
-
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        background-color: #f9f9f9;
     }
 
     tr.blobuploader {
@@ -200,8 +201,13 @@
     <h3>{L_BLOGUPLOADER_PANEL_TITLE}</h3>
     <p class="blobuploader-explain">{EXPLAIN_TEXT}</p>
     <p class="blobuploader">{L_BLOBUPLOADER_UPLOADER_PANEL_EXPLAIN}</p>
-    <input type="file" name="uploader[]" id="files-to-upload" multiple />
+    <div class="blobuploader blobuploader-selection">
+        <input type="file" name="uploader[]" id="files-to-upload" multiple />
 
+        <!-- Checkbox "Automatically insert images into editor." -->
+        <input type="checkbox" name="auto-insert-images" id="auto-insert-images" value="1" checked>
+        <label for="auto-insert-images">{L_BLOBUPLOADER_AUTO_INSERT_IMAGES}</label>
+    </div>
 
     <!-- Uploaded files section -->
     <div class="blobuploader blobuploader-hide">

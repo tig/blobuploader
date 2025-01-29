@@ -46,6 +46,8 @@ $lang = array_merge($lang, [
 	'BLOBUPLOADER_COPY_ALL_EXPLAIN' => 'Copy BBcodes for all images to the clipboard  ',
 	'BLOBUPLOADED_FILES' => 'Uploaded files',
 
+    'BLOBUPLOADER_AUTO_INSERT_IMAGES' => 'Auto insert images',
+
     'BLOBUPLOADER_ORIGINAL_PREFIX' => '_original',
     'BLOBUPLOADER_SIZED_PREFIX' => '_sized',
     'BLOBUPLOADER_THUMBNAIL_PREFIX' => '_thumbnail',
