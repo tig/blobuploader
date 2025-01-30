@@ -1,27 +1,31 @@
 import { heicTo, isHeic } from 'heic-to';
-
 const { maxWidth, maxHeight } = window.acpSettings;
 
 document.addEventListener('DOMContentLoaded', function () {
     const uploadedFilesContainer = document.getElementById('uploaded-files');
     const filesToUpload = document.getElementById('files-to-upload');
     const formElement = document.getElementById('postform');
-    const hiddenField = document.getElementById('uploaded-files-field');
     const copyAllLink = document.getElementById('copy-all-bbcodes-link');
     const insertAllLink = document.getElementById('insert-all-bbcodes-link');
 
     // If no CKEDitor, add a drop handler for the default editor
     if (!window.CKEDITOR) {
-        //console.log('CKEditor not found. Adding drop handler for default editor.');
+        console.log('CKEditor not found. Adding drop handler for default editor.');
+
+        // Add dragover event listener to allow drop
+        document.addEventListener('dragover', function (event) {
+            event.preventDefault();
+        });
+
         document.addEventListener('drop', async function (event) {
-            //console.log('Document Drop event:', event.dataTransfer.files);
+            console.log('Document Drop event:', event.dataTransfer.files);
 
             // Prevent default browser behavior
             event.preventDefault();
 
             // This method is defined by blobuploader
             try {
-                await window.uploadDroppedFiles(event.dataTransfer.files);
+                await window.uploadFiles(event.dataTransfer.files);
                 //console.log('Files uploaded successfully.');
             } catch (error) {
                 console.error('Error uploading files:', error);
@@ -32,24 +36,24 @@ document.addEventListener('DOMContentLoaded', function () {
     // Check if formElement exists
     if (formElement) {
         // Restore uploaded files from the hidden input field
-        restoreUploadedFilesFromForm(hiddenField, uploadedFilesContainer);
+        restoreUploadedFilesFromForm(uploadedFilesContainer);
 
         // Add event listener for file uploads
         if (filesToUpload) {
             filesToUpload.addEventListener('change', async function (event) {
                 const files = event.target.files;
-                const updatedFiles = await uploadFiles(files, hiddenField, uploadedFilesContainer);
+                const updatedFiles = await uploadFiles(files);
 
                 // Update the hidden input field
-                updateHiddenField(hiddenField, updatedFiles);
+                updateHiddenField(updatedFiles);
             });
         }
 
         // Ensure the hidden field is updated before form submission
         formElement.addEventListener('submit', function () {
-            const storedFiles = getStoredFiles(hiddenField);
-            //console.log('Submitting form with files:', storedFiles);
-            updateHiddenField(hiddenField, storedFiles);
+            const storedFiles = getStoredFiles();
+            console.log('Submitting form with files:', storedFiles);
+            updateHiddenField(storedFiles);
         });
     } else {
         console.warn('Form element with id "postdata" not found.');
@@ -59,7 +63,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (copyAllLink) {
         copyAllLink.addEventListener('click', function (event) {
             event.preventDefault(); // Prevent default link behavior
-            const storedFiles = getStoredFiles(hiddenField);
+            const storedFiles = getStoredFiles();
             const allBBcodes = storedFiles
                 .filter(file => !file.error) // Skip files with errors
                 .map(file => `[url=${file.original}]\n [img]${file.sized}[/img]\n[/url]\n`)
@@ -77,7 +81,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (insertAllLink) {
         insertAllLink.addEventListener('click', function (event) {
             event.preventDefault(); // Prevent default link behavior
-            const storedFiles = getStoredFiles(hiddenField);
+            const storedFiles = getStoredFiles();
             const allBBcodes = storedFiles
                 .filter(file => !file.error) // Skip files with errors
                 .map(file => `[url=${file.original}]\n [img]${file.sized}[/img]\n[/url]\n`)
@@ -85,7 +89,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (window.CKEDITOR) {
                 var instances_names = Object.keys(CKEDITOR.instances),
-                editor = CKEDITOR.instances[instances_names[0]];
+                    editor = CKEDITOR.instances[instances_names[0]];
                 if (editor.mode === 'wysiwyg') {
                     editor.insertText(allBBcodes);
                     editor.setMode('source');
@@ -118,25 +122,35 @@ function hideLoadingSpinner() {
 }
 
 // Restore uploaded files from the hidden input field
-function restoreUploadedFilesFromForm(hiddenField, container) {
+function restoreUploadedFilesFromForm(container) {
+    console.group('restoreUploadedFilesFromForm:', container);
+
+    const hiddenField = document.getElementById('uploaded-files-field');
     const uploadedFiles = hiddenField.value ? JSON.parse(hiddenField.value) : [];
-    //console.log('Restored files:', uploadedFiles);
+    console.log('Restored files:', uploadedFiles);
     displayUploadedFiles(uploadedFiles, container);
+    console.groupEnd();
 }
 
 // Update the hidden input field with the latest uploaded files
-function updateHiddenField(hiddenField, files) {
-    //console.log('Updating hidden field with files:', files);
+function updateHiddenField(files) {
+    console.group('updateHiddenField:', files);
+
+    const hiddenField = document.getElementById('uploaded-files-field');
     hiddenField.value = JSON.stringify(files);
     //console.log('Hidden field value:', hiddenField.value);
+    console.groupEnd();
 }
 
 // Get stored files from the hidden input field
-function getStoredFiles(hiddenField) {
-    //console.log('Getting stored files from hidden field');
+function getStoredFiles() {
+    console.group('getStoredFiles:');
+    const hiddenField = document.getElementById('uploaded-files-field');
     if (hiddenField.value) {
-        //console.log('Stored files:', JSON.parse(hiddenField.value));
+        // console.log('hiddenField.value non-null:', JSON.parse(hiddenField.value));
     }
+    console.log('stored files:', hiddenField.value ? JSON.parse(hiddenField.value) : []);
+    console.groupEnd();
     return hiddenField.value ? JSON.parse(hiddenField.value) : [];
 }
 
@@ -145,127 +159,105 @@ function getStoredFiles(hiddenField) {
 // Called from the document drop event listener in the CKEditor plugin
 // or from the document drop event listener in the default editor
 // Expose this method to the global scope
-window.uploadDroppedFiles = uploadDroppedFiles;
+window.uploadFiles = uploadFiles;
 
-async function uploadDroppedFiles(files) {
-    console.log('uploadDroppedFiles:', files);
+// Handle file uploads
+async function uploadFiles(files) {
+    console.group('uploadFiles:', files);
 
-    const hiddenField = document.getElementById('uploaded-files-field');
-    const storedFiles = getStoredFiles(hiddenField);
     const uploadedFilesContainer = document.getElementById('uploaded-files');
+    const storedFiles = getStoredFiles();
+    
+    var imgTags = '';
 
+    // disable editor while uploading
     if (window.CKEDITOR) {
         var instances_names = Object.keys(CKEDITOR.instances),
-        editor = CKEDITOR.instances[instances_names[0]];
-
-       if (editor && editor.mode === 'source') {
-            console.warn('CKEDITOR is in source mode. Cannot insert BBCode.');
-           // return;
+            editor = CKEDITOR.instances[instances_names[0]];
+        if (editor.mode === 'wysiwyg') {
+            editor.setReadOnly(true);
+        } else {
+            console.log('Editor mode is not WYSIWYG');
         }
     }
 
     for (const file of files) {
         try {
-            const uploadedFile = await uploadSingleFile(file);
-            // console.log('Uploaded Dropped file:', uploadedFile);
-            storedFiles.push(uploadedFile); // Spread the array to merge it into storedFiles
-            displayUploadedFiles(storedFiles, uploadedFilesContainer);
+            console.group('file:', file);
 
-            insertIntoEditor(uploadedFile);
-           
+            if (!isAllowedExtension(file)) {
+                console.log('non image file:', file.name);
+                throw new Error('Error uploading ' + file.name + '. Only image files are supported.');
+            }
+
+            console.log('Converting HEIC to JPG if needed:', file.name);
+            const convertedFile = await convertHeicToJpg(file);
+            console.log('convertedFile:', convertedFile);
+
+            console.log('Resizing image:', convertedFile.name);
+            const resizedFile = await resizeImage(convertedFile, maxWidth, maxHeight);
+            console.log('resizedFile:', resizedFile);
+
+            console.log('Uploading single file:', resizedFile.name);
+            const uploadedFile = await uploadSingleFile(resizedFile);
+            console.log('uploadedFile:', uploadedFile);
+
+            imgTags = imgTags + '[url=' + uploadedFile.original + ']\n  [img]' + uploadedFile.sized + '[/img]\n[/url]\n';
+
+
+            storedFiles.push(uploadedFile);
         } catch (error) {
-            storedFiles.push({ error: error.error, name: file.name });           
-        }
-        finally{
-            // Remove duplicates
-            const uniqueFiles = removeDuplicateFiles(storedFiles);
-            displayUploadedFiles(uniqueFiles, uploadedFilesContainer);
-        }
-    }
-
-    if (editor) {
-        // Hack and switch to source mode and back to WYSIWYG to refresh
-        editor.setMode('source');
-        editor.setMode('wysiwyg');
-    }
-
-    // Remove duplicates
-    const uniqueFiles = removeDuplicateFiles(storedFiles);
-    // Update the hidden input field
-    updateHiddenField(hiddenField, uniqueFiles);
-
-    return uniqueFiles;
-}
-
-function insertIntoEditor(uploadedFile) {
-    console.log('insertIntoEditor:', uploadedFile);
- // Create the BBCode for the image
-    const imgTag = '[url=' + uploadedFile.original + ']\n  [img]' + uploadedFile.sized + '[/img]\n[/url]\n';
-    try {
-        if (window.CKEDITOR) {
-            var instances_names = Object.keys(CKEDITOR.instances),
-            editor = CKEDITOR.instances[instances_names[0]];
-            if (editor.mode === 'wysiwyg') {
-                editor.insertText(imgTag);
-                editor.setMode('source');
-                editor.setMode('wysiwyg');
-            } else {
-                console.log('Editor mode is not WYSIWYG');
-            }
-        } else {
-            // Find the first textarea in the document
-            const textArea = document.querySelector('textarea');
-            if (textArea) {
-                // Get the current insertion point
-                const selectionStart = textArea.selectionStart;
-                const selectionEnd = textArea.selectionEnd;
-                // Insert the BBCode at the current insertion point
-                textArea.value = textArea.value.substring(0, selectionStart) + imgTag + textArea.value.substring(selectionEnd);
-            }
-        }
-    } catch (error) {
-        console.error('Error inserting [img] tag:', error);
-    }
-}
-
-// Handle file uploads
-async function uploadFiles(files, hiddenField, uploadedFilesContainer) {
-    const storedFiles = getStoredFiles(hiddenField);
-
-    for (const file of files) {
-        try{
-            const uploadedFile = await uploadSingleFile(file);
-
-            const autoInsert = document.getElementById('auto-insert-images');
-            const autoInsertValue = autoInsert ? autoInsert.checked : false;
-
-            if (autoInsertValue){
-                insertIntoEditor(uploadedFile);
-            }
-
-            storedFiles.push(uploadedFile); 
-        } catch (error) {
-            storedFiles.push({ error: error.error, name: file.name });
-        }
-        finally{
+            console.log('Exception uploading file:', error.message);
+            storedFiles.push({ error: error.message, name: file.name });
+        } finally {
             // Remove duplicates
             const uniqueFiles = removeDuplicateFiles(storedFiles);
             console.log('uniqueFiles:', uniqueFiles);
             displayUploadedFiles(uniqueFiles, uploadedFilesContainer);
+            console.groupEnd();
         }
+    }
+
+    // enable editor after uploading
+    if (window.CKEDITOR) {
+        var instances_names = Object.keys(CKEDITOR.instances),
+            editor = CKEDITOR.instances[instances_names[0]];
+        if (editor.mode === 'wysiwyg') {
+            editor.setReadOnly(false);
+        } else {
+            console.log('Editor mode is not WYSIWYG');
+        }
+    }
+
+    
+    const autoInsert = document.getElementById('auto-insert-images');
+    const autoInsertValue = autoInsert ? autoInsert.checked : false;
+    if (autoInsertValue) {
+        // Create the BBCode for the image
+        insertIntoEditor(imgTags);
+        refreshCKEditor();
     }
 
     // Remove duplicates
     const uniqueFiles = removeDuplicateFiles(storedFiles);
-
     // Update the hidden input field
-    updateHiddenField(hiddenField, uniqueFiles);
+    updateHiddenField(uniqueFiles);
 
+    console.groupEnd();
     return uniqueFiles;
 }
 
 async function resizeImage(file, maxWidth, maxHeight) {
-    return new Promise((resolve, reject) => {
+    if (file.type === 'image/gif'){
+        return file;
+    }
+    console.group('resizeImage:', file);
+
+    showLoadingSpinner();
+    
+    const originalSize = file.size;
+
+    var resizedBlob = await new Promise((resolve, reject) => {
         const img = new Image();
         img.onload = () => {
             let width = img.width;
@@ -306,67 +298,72 @@ async function resizeImage(file, maxWidth, maxHeight) {
         };
         img.src = URL.createObjectURL(file);
     });
+
+    var resizedFile = new File([resizedBlob], file.name, { type: file.type });
+    console.log(`Resized ${file.name} from ${(originalSize / 1024).toFixed(2)}MB to ${(resizedFile.size / 1024).toFixed(2)}MB`);
+
+    console.groupEnd();
+
+    hideLoadingSpinner();
+
+    return resizedFile;
+}
+
+function isAllowedExtension(file){
+    return window.allowedExtensions.includes(file.name.split('.').pop().toLowerCase());
+}
+
+async function convertHeicToJpg(file) {
+    console.group('convertHeicToJpg:', file);
+
+    var convertedFile = file;
+    showLoadingSpinner();
+
+    try {
+        console.log('Checking if file is HEIC:', file.name);
+        if (await isHeic(file)) {
+            console.log('File is HEIC:', file.name);
+            try {
+                const convertedBlob = await heicTo({
+                    blob: file,
+                    type: "image/jpeg",
+                    quality: 0.9
+                });
+
+                // Create a new File object from the converted Blob
+                const fileName = file.name.replace(/\.[^/.]+$/, ".jpg");
+                const fileType = 'image/jpeg';
+                convertedFile = new File([convertedBlob], fileName, { type: fileType });
+            } catch (error) {
+                throw new Error('Error converting ' + file.name + ' to JPG: ' + error);
+            }
+        } else {
+            console.log('File is not HEIC:', file.name);
+        }
+    } catch (error) {
+        console.error('Error checking if file is HEIC:', error);
+    } finally {
+        console.groupEnd();
+        hideLoadingSpinner();
+    }
+
+    return convertedFile;
 }
 
 // Upload a single file
 async function uploadSingleFile(file) {
-    console.log('uploadSingleFile - file:', file);
+    console.group('uploadSingleFile:', file);
 
     let fileToUpload = file;
 
-    // If the extension is not in window.allowedExtensions, throw an error
-    if (!window.allowedExtensions.includes(file.name.split('.').pop().toLowerCase())) {
-        throw new Error('Error uploading ' + file.name + '. Only image files are supported.');
-    }
-
-    // Check if the file is an HEIC file and convert it to JPG
-    if (await isHeic(file)) {
-        try {
-            showLoadingSpinner();
-
-            const convertedBlob = await heicTo({
-                blob: file,
-                type: "image/jpeg",
-                quality: 0.9
-            })
-
-            // Create a new File object from the converted Blob
-            const fileName = file.name.replace(/\.[^/.]+$/, ".jpg");
-            const fileType = 'image/jpeg';
-            fileToUpload = new File([convertedBlob], fileName, { type: fileType });
-
-        } catch (error) {
-            throw new Error('Error converting ' + file.name + ' to JPG: ' + error);
-        } finally {
-            hideLoadingSpinner();
-        }
-    }
-
-    // Resize the image to a maximum resolution of 4K (3840x2160)
-    // skip gifs
-    if (file.type !== 'image/gif') {
-        try {
-            showLoadingSpinner();
-            const originalSize = fileToUpload.size;
-            const resizedBlob = await resizeImage(fileToUpload, maxWidth, maxHeight);
-            fileToUpload = new File([resizedBlob], fileToUpload.name, { type: fileToUpload.type });
-
-            // Log the resized File object details
-            console.log(`Resized ${file.name} from ${(originalSize/1024).toFixed(2)}MB to ${(fileToUpload.size / 1024).toFixed(2)}MB`);
-        } catch (error) {
-            throw new Error('Error resizing ' + file.name + ':' + error);
-        } finally {
-            hideLoadingSpinner();
-        }
-    }
-
-    console.log('fileToUpload:', fileToUpload);
+    //console.log('fileToUpload:', fileToUpload);
 
     const formData = new FormData();
     formData.append('image', fileToUpload, fileToUpload.name);
 
+    showLoadingSpinner();
+
     try {
-        showLoadingSpinner();
 
         const response = await fetch('/blobuploader', {
             method: 'POST',
@@ -379,13 +376,14 @@ async function uploadSingleFile(file) {
         switch (response.status) {
             case 200:
                 const result = await response.json();
-                console.log('Upload result:', result);
+                //console.log('Upload result:', result);
+
                 return {
                     thumbnail: result.thumbnail,
                     sized: result.sized,
                     original: result.original,
                     message: result.message,
-                };  
+                };
 
             case 400:
                 const errResult = await response.json();
@@ -396,15 +394,12 @@ async function uploadSingleFile(file) {
 
                 var error = errResult.error.error;
                 var message = errResult.error.message.message;
-                if (errResult.error.message.exception){
+                if (errResult.error.message.exception) {
                     // console.log('Error uploading file - errResult.error.message.exception:', errResult.error.message.exception);
                     error = error + ' ' + errResult.error.message.exception;
                 }
 
-                return {
-                    error: error,
-                    message: message
-                };
+                throw new Error(error);
 
             case 500:
                 throw new Error('Internal server error');
@@ -413,20 +408,15 @@ async function uploadSingleFile(file) {
         }
 
     } catch (error) {
-        console.group('Exception from fetch:', error);
-
         // Log the response text if available
         if (error.response) {
             const responseText = await error.response.text();
             console.error('Response text:', responseText);
         }
 
-        console.groupEnd();
-        return {
-            error: 400,
-            message: error.message,
-        };  
+        throw new Error('Error uploading ' + fileToUpload.name + ': ' + error.message);
     } finally {
+        console.groupEnd();
         hideLoadingSpinner();
     }
 }
@@ -434,7 +424,7 @@ async function uploadSingleFile(file) {
 // Display uploaded files
 function displayUploadedFiles(files, container) {
     container.innerHTML = '';
-    console.log('Files passed to displayUploadedFiles:', files);
+    console.group('displayUploadedFiles:', files);
 
     // hide/unhide all HTML elements with class blobuploader-hide depending on 
     // if there are files or not
@@ -460,7 +450,7 @@ function displayUploadedFiles(files, container) {
         thumbnail.style.height = 'auto';
         thumbnail.style.marginBottom = '5px';
 
-        console.log('fileData:', fileData);
+        //console.log('fileData:', fileData);
         if (fileData.error) {
             // Display error image
             thumbnail.src = '/ext/tig/blobuploader/images/hitwhilewarm.gif';
@@ -492,8 +482,8 @@ function displayUploadedFiles(files, container) {
             preTag.textContent = bbcodeTag;
             preTag.classList.add('box');
 
-            const insertTagButton = createInsertButton(fileData, 'Insert BBCode into editor');
-            const copyTagButton = createCopyButton(fileData, 'Copy BBCode to Clipboard');
+            const insertTagButton = createBBCodeInsertButton(fileData, 'Insert BBCode into editor');
+            const copyTagButton = createBBCodeCopyButton(fileData, 'Copy BBCode to Clipboard');
             tagContainer.appendChild(insertTagButton);
             tagContainer.appendChild(copyTagButton);
             tagContainer.appendChild(preTag);
@@ -505,8 +495,8 @@ function displayUploadedFiles(files, container) {
             const anchorTag = document.createElement('pre');
             anchorTag.textContent = fileData.sized;
             anchorTag.classList.add('box');
-            const insertButton = createInsertButton(fileData.sized, 'Insert URL into editor');
-            const copyButton = createCopyButton(fileData.sized, 'Copy URL to Clipboard');
+            const insertButton = createUrlInsertButton(fileData, 'Insert URL into editor');
+            const copyButton = createUrlCopyButton(fileData, 'Copy URL to Clipboard');
 
             urlContainer.appendChild(insertButton);
             urlContainer.appendChild(copyButton);
@@ -514,7 +504,9 @@ function displayUploadedFiles(files, container) {
 
             thumbnail.addEventListener('click', (event) => {
                 event.preventDefault();
-                insertIntoEditor(fileData);
+                // Create the BBCode for the image
+                const imgTag = '[url=' + uploadedFile.original + ']\n  [img]' + uploadedFile.sized + '[/img]\n[/url]\n';
+                insertIntoEditor(imgTag);
             });
 
             // Append the URL container and tag container to the info cell
@@ -533,14 +525,84 @@ function displayUploadedFiles(files, container) {
 
         container.appendChild(table);
     });
+    console.log('displayUploadedFiles done');
+    console.groupEnd();
 }
 
+function refreshCKEditor() {
+    if (window.CKEDITOR) {
+        var instances_names = Object.keys(CKEDITOR.instances),
+            editor = CKEDITOR.instances[instances_names[0]];
+        if (editor.mode === 'wysiwyg') {
+            editor.setMode('source');
+            editor.setMode('wysiwyg');
+        } else {
+            console.log('Editor mode is not WYSIWYG');
+        }
+    } 
+}
+
+function insertIntoEditor(text) {
+    console.group('insertIntoEditor:', text);
+    try {
+        if (window.CKEDITOR) {
+            var instances_names = Object.keys(CKEDITOR.instances),
+                editor = CKEDITOR.instances[instances_names[0]];
+            if (editor.mode === 'wysiwyg') {
+                //console.log('Inserting text into CKEditor...');
+                editor.insertText(text);
+            } else {
+                console.log('Editor mode is not WYSIWYG');
+            }
+        } else {
+            // Find the first textarea in the document
+            const textArea = document.querySelector('textarea');
+            if (textArea) {
+                console.log('textArea:', textArea);
+                // Get the current insertion point
+                const selectionStart = textArea.selectionStart;
+                const selectionEnd = textArea.selectionEnd;
+                // Insert the text at the current insertion point
+                textArea.value = textArea.value.substring(0, selectionStart) + text + textArea.value.substring(selectionEnd);
+            }
+        }
+    } catch (error) {
+        console.error('Error inserting text into editor:', error);
+    }
+    finally {
+        console.log('insertIntoEditor - done');
+        console.groupEnd();
+    }
+}
 
 // Create copy button
-function createCopyButton(fileData, title) {
+function createBBCodeCopyButton(fileData, title) {
+    //console.group('createUrlCopyButton:', fileData);
     const button = document.createElement('button');
     button.innerHTML = '<i class="copy-button fa fa-clipboard"></i>';
     button.title = title;
+
+    const bbcodeTag = '[url=' + fileData.original + ']\n  [img]' + fileData.sized + '[/img]\n[/url]';
+
+    button.addEventListener('click', (event) => {
+        event.preventDefault();
+        navigator.clipboard.writeText(bbcodeTag).then(() => {
+            console.log('Copied to clipboard');
+        }).catch(err => {
+            console.error('Failed to copy:', err);
+        });
+    });
+    //console.log('button:', button);
+    //console.groupEnd();    
+    return button;
+}
+
+function createUrlCopyButton(fileData, title) {
+    //console.group('createUrlCopyButton:', fileData);
+    const button = document.createElement('button');
+    button.innerHTML = '<i class="copy-button fa fa-clipboard"></i>';
+    button.title = title;
+
     button.addEventListener('click', (event) => {
         event.preventDefault();
         navigator.clipboard.writeText(fileData.original).then(() => {
@@ -549,19 +611,41 @@ function createCopyButton(fileData, title) {
             console.error('Failed to copy:', err);
         });
     });
+    //console.log('button:', button);
+    //console.groupEnd();
     return button;
 }
 
 // Create copy button
-function createInsertButton(fileData, title) {
-    console.log('createInsertButton:', fileData);
+function createBBCodeInsertButton(fileData, title) {
+    //console.group('createBBCodeInsertButton:', fileData);
     const button = document.createElement('button');
     button.innerHTML = '<i class="copy-button fa fa-edit"></i>';
     button.title = title;
+
+    const bbcodeTag = '[url=' + fileData.original + ']\n  [img]' + fileData.sized + '[/img]\n[/url]\n';
+
     button.addEventListener('click', (event) => {
         event.preventDefault();
-        insertIntoEditor(fileData);
+        insertIntoEditor(bbcodeTag);
     });
+    //console.log('button:', button);
+    //console.groupEnd();
+    return button;
+}
+
+function createUrlInsertButton(fileData, title) {
+    //console.group('createUrlInsertButton:', fileData);
+    const button = document.createElement('button');
+    button.innerHTML = '<i class="copy-button fa fa-edit"></i>';
+    button.title = title;
+
+    button.addEventListener('click', (event) => {
+        event.preventDefault();
+        insertIntoEditor(fileData.original);
+    });
+    //console.log('button:', button);
+    //console.groupEnd();
     return button;
 }
 
