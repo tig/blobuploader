@@ -30,15 +30,10 @@
         background-color: #f9f9f9;
     }
 
-    tr.blobuploader {
-        max-width: 100%;
-        /* Ensure  doesn't exceed the parent width */
-        border-bottom: 1px solid #afcedb;
-    }
-
     table.blobuploader {
+        width: 100%; /* Make the table fill its container */
         max-width: 100%;
-        /* Ensure it doesn't exceed the parent width */
+        border-bottom: 1px solid #afcedb;
         margin-bottom: 3px;
     }
 
@@ -54,19 +49,7 @@
         overflow-y: auto;
         /* Allow scrolling if content exceeds height */
         border: 1px solid #ccc;
-        padding: 10px;
-    }
-
-    /* Thumbnail styling */
-    .thumbnail {
-        flex-shrink: 0;
-        /* Prevent the thumbnail from shrinking */
-        width: 80px;
-        /* Fixed width */
-        height: auto;
-        /* Maintain aspect ratio */
-        object-fit: contain;
-        margin-right: 10px;
+        padding: 5px;
     }
 
     .box-container {
@@ -121,10 +104,47 @@
         /* Optional: add a background color */
     }
 
+    .thumbnail td {
+        width: 100px;
+    }
+
+    .thumbnail {
+        flex-shrink: 0;
+        /* Prevent the thumbnail from shrinking */
+        width: 100px;
+        /* Fixed width */
+        height: auto;
+        /* Maintain aspect ratio */
+        object-fit: contain;
+        margin-bottom: 5px;
+        margin-right: 10px;
+    }
+
+    .loading {
+        width: 100px;
+        height: auto;
+    }
+
+    .info-cell-container {
+        /* Vertically center items */
+        margin: 0;
+        margin-left: 2px;
+
+        /* Space between the box and the button */
+        margin-bottom: 2px;
+        font-family: inherit;
+        font-size: .9em;
+    }
+
+    .status-message {
+        color: rgb(4, 4, 135);
+        padding-left: 5px;
+    }
+
     /* Error message or additional content */
     .error-message {
         color: red;
-        margin-left: 10px;
+        padding-left: 5px;
     }
 
     /* Mobile adjustments */
@@ -251,7 +271,7 @@
 
     <!-- Loading spinner -->
     <div class="loading-spinner">
-        <img src="ext/tig/blobuploader/images/roundel.gif" alt="Loading...">
+        <img src="ext/tig/blobuploader/images/roundel.gif" alt="Uploading...">
     </div>
 </div>
 
@@ -273,5 +293,5 @@
 </script>
 
 <script type="module"
-    src="ext/tig/blobuploader/styles/prosilver/template/js/posting_layout_include_panel_body.js">
+    src="ext/tig/blobuploader/styles/prosilver/template/js/posting_editor_message_after.js">
 </script>

@@ -86,39 +86,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 .filter(file => !file.error) // Skip files with errors
                 .map(file => `[url=${file.original}]\n [img]${file.sized}[/img]\n[/url]\n`)
                 .join('\n');
-
-            if (window.CKEDITOR) {
-                var instances_names = Object.keys(CKEDITOR.instances),
-                    editor = CKEDITOR.instances[instances_names[0]];
-                if (editor.mode === 'wysiwyg') {
-                    editor.insertText(allBBcodes);
-                    editor.setMode('source');
-                    editor.setMode('wysiwyg');
-                } else {
-                    console.log('Editor mode is not WYSIWYG');
-                }
-            } else {
-                // Find the first textarea in the document
-                const textArea = document.querySelector('textarea');
-                if (textArea) {
-                    // Get the current insertion point
-                    const selectionStart = textArea.selectionStart;
-                    const selectionEnd = textArea.selectionEnd;
-                    // Insert the BBCode at the current insertion point
-                    textArea.value = textArea.value.substring(0, selectionStart) + allBBcodes + textArea.value.substring(selectionEnd);
-                    //console.log('Inserted into editor');
-                }
-            }
+            insertIntoEditor(allBBcodes);
+            refreshCKEditor();
         });
     }
 });
 
 function showLoadingSpinner() {
-    document.querySelector('.loading-spinner').style.display = 'block';
+    //document.querySelector('.loading-spinner').style.display = 'block';
 }
 
 function hideLoadingSpinner() {
-    document.querySelector('.loading-spinner').style.display = 'none';
+    //document.querySelector('.loading-spinner').style.display = 'none';
 }
 
 // Restore uploaded files from the hidden input field
@@ -128,7 +107,7 @@ function restoreUploadedFilesFromForm(container) {
     const hiddenField = document.getElementById('uploaded-files-field');
     const uploadedFiles = hiddenField.value ? JSON.parse(hiddenField.value) : [];
     console.log('Restored files:', uploadedFiles);
-    displayUploadedFiles(uploadedFiles, container);
+    upldateUploadedFiles(uploadedFiles, container);
     console.groupEnd();
 }
 
@@ -154,20 +133,18 @@ function getStoredFiles() {
     return hiddenField.value ? JSON.parse(hiddenField.value) : [];
 }
 
-
 // Handle dropped files
 // Called from the document drop event listener in the CKEditor plugin
 // or from the document drop event listener in the default editor
 // Expose this method to the global scope
 window.uploadFiles = uploadFiles;
-
 // Handle file uploads
 async function uploadFiles(files) {
     console.group('uploadFiles:', files);
 
     const uploadedFilesContainer = document.getElementById('uploaded-files');
     const storedFiles = getStoredFiles();
-    
+
     var imgTags = '';
 
     // disable editor while uploading
@@ -181,9 +158,24 @@ async function uploadFiles(files) {
         }
     }
 
-    for (const file of files) {
+    // Convert FileList to Array if necessary
+    if (!(files instanceof Array)) {
+        files = Array.from(files);
+    }
+
+    // Create an array of promises for each file upload
+    const uploadPromises = files.map(async (file) => {
         try {
             console.group('file:', file);
+
+            const placeholder = {
+                name: file.name,
+                message: `Uploading ${file.name}...`,
+            };
+
+            // Add the placeholder to the stored files
+            storedFiles.push(placeholder);
+            upldateUploadedFiles(storedFiles, uploadedFilesContainer);
 
             if (!isAllowedExtension(file)) {
                 console.log('non image file:', file.name);
@@ -200,23 +192,28 @@ async function uploadFiles(files) {
 
             console.log('Uploading single file:', resizedFile.name);
             const uploadedFile = await uploadSingleFile(resizedFile);
+            uploadedFile.name = file.name;
             console.log('uploadedFile:', uploadedFile);
 
             imgTags = imgTags + '[url=' + uploadedFile.original + ']\n  [img]' + uploadedFile.sized + '[/img]\n[/url]\n';
 
+            // Find the file and update it with the uploaded file
+            const index = storedFiles.findIndex(f => f.name === file.name);
+            storedFiles[index] = uploadedFile;
 
-            storedFiles.push(uploadedFile);
         } catch (error) {
             console.log('Exception uploading file:', error.message);
-            storedFiles.push({ error: error.message, name: file.name });
+            // Find the file and update it with the error
+            const index = storedFiles.findIndex(f => f.name === file.name);
+            storedFiles[index] = { error: error.message, name: file.name };
         } finally {
-            // Remove duplicates
-            const uniqueFiles = removeDuplicateFiles(storedFiles);
-            console.log('uniqueFiles:', uniqueFiles);
-            displayUploadedFiles(uniqueFiles, uploadedFilesContainer);
+            upldateUploadedFiles(storedFiles, uploadedFilesContainer);
             console.groupEnd();
         }
-    }
+    });
+
+    // Wait for all uploads to complete
+    await Promise.all(uploadPromises);
 
     // enable editor after uploading
     if (window.CKEDITOR) {
@@ -229,7 +226,6 @@ async function uploadFiles(files) {
         }
     }
 
-    
     const autoInsert = document.getElementById('auto-insert-images');
     const autoInsertValue = autoInsert ? autoInsert.checked : false;
     if (autoInsertValue) {
@@ -248,13 +244,13 @@ async function uploadFiles(files) {
 }
 
 async function resizeImage(file, maxWidth, maxHeight) {
-    if (file.type === 'image/gif'){
+    if (file.type === 'image/gif') {
         return file;
     }
     console.group('resizeImage:', file);
 
     showLoadingSpinner();
-    
+
     const originalSize = file.size;
 
     var resizedBlob = await new Promise((resolve, reject) => {
@@ -309,7 +305,7 @@ async function resizeImage(file, maxWidth, maxHeight) {
     return resizedFile;
 }
 
-function isAllowedExtension(file){
+function isAllowedExtension(file) {
     return window.allowedExtensions.includes(file.name.split('.').pop().toLowerCase());
 }
 
@@ -422,9 +418,9 @@ async function uploadSingleFile(file) {
 }
 
 // Display uploaded files
-function displayUploadedFiles(files, container) {
+function upldateUploadedFiles(files, container) {
     container.innerHTML = '';
-    console.group('displayUploadedFiles:', files);
+    console.group('upldateUploadedFiles:', files);
 
     // hide/unhide all HTML elements with class blobuploader-hide depending on 
     // if there are files or not
@@ -440,44 +436,96 @@ function displayUploadedFiles(files, container) {
     }
 
     files.forEach(fileData => {
-        const tableRow = document.createElement('tr');
-        tableRow.classList.add('blobuploader');
+        var table;
+        var thumbnail;
+        var infoCellContainer;
 
-        // Create a cell for the thumbnail
-        const thumbnailCell = document.createElement('td');
-        const thumbnail = document.createElement('img');
-        thumbnail.style.width = '100px';
-        thumbnail.style.height = 'auto';
-        thumbnail.style.marginBottom = '5px';
+        // If the Id already exists, update it. Otherwise create a new tr.
+        if (document.getElementById(sanitizeId(fileData.name))) {
+            table = document.getElementById(sanitizeId(fileData.name));
+            thumbnail = table.querySelector('img');
+            infoCellContainer = table.querySelector('.info-cell-container');
+        } else {
+            // Create the table for this file
+            table = document.createElement('table');
+            table.id = sanitizeId(fileData.name);
+            table.classList.add('blobuploader');
+            container.appendChild(table);
+
+            const tableRow = document.createElement('tr');
+            tableRow.classList.add('blobuploader');
+
+            // Create a cell for the thumbnail
+            const thumbnailCell = document.createElement('td');
+            thumbnailCell.classList.add('thumbnail');
+            thumbnail = document.createElement('img');
+            thumbnail.classList.add('thumbnail');
+            thumbnailCell.appendChild(thumbnail);
+
+            // Create a cell for the URL and tag
+            const infoCell = document.createElement('td');
+            infoCell.classList.add('info-cell');
+
+            // Create a container for the URL and tag
+            infoCellContainer = document.createElement('div');
+            infoCellContainer.classList.add('info-cell-container');
+            infoCell.appendChild(infoCellContainer);
+
+            // Append cells to the table row
+            tableRow.appendChild(thumbnailCell);
+            tableRow.appendChild(infoCell);
+
+            table.appendChild(tableRow);
+        }
 
         //console.log('fileData:', fileData);
         if (fileData.error) {
             // Display error image
             thumbnail.src = '/ext/tig/blobuploader/images/hitwhilewarm.gif';
             thumbnail.alt = 'Error';
+            thumbnail.classList.remove('loading');
+
+            // Clear infoCell
+            infoCellContainer.innerHTML = '';
+            infoCellContainer.classList.remove('status-message');
+            infoCellContainer.classList.add('error-message');
+            infoCellContainer.textContent = fileData.error;
+
+        } else if (!fileData.thumbnail) {
+            // Display loading image
+            thumbnail.src = '/ext/tig/blobuploader/images/roundel.gif';
+            thumbnail.alt = fileData.message;
+            thumbnail.classList.add('loading');
+
+            // Clear infoCell
+            infoCellContainer.innerHTML = '';
+            infoCellContainer.classList.remove('error-message');
+            infoCellContainer.classList.add('status-message');
+            infoCellContainer.textContent = fileData.message;
+
         } else {
-            // Display thumbnail image
+            // Display the thumbnail
             thumbnail.src = fileData.thumbnail;
             thumbnail.alt = 'Thumbnail';
-        }
-        thumbnailCell.appendChild(thumbnail);
+            thumbnail.classList.remove('loading');
 
-        // Create a cell for the URL and tag
-        const infoCell = document.createElement('td');
+            const bbcodeTag = '[url=' + fileData.original + ']\n  [img]' + fileData.sized + '[/img]\n[/url]';
 
-        if (fileData.error) {
-            // Display error message
-            const errorMessage = document.createElement('div');
-            errorMessage.classList.add('error-message');
-            errorMessage.classList.add('box-container');
-            errorMessage.textContent = fileData.error;
-            infoCell.appendChild(errorMessage);
-        } else {
-            // Create a container for the BBCode tag and copy button
+            thumbnail.addEventListener('click', (event) => {
+                event.preventDefault();
+                insertIntoEditor(bbcodeTag);
+                refreshCKEditor();
+            });
+
+            // Display the file info
+            infoCellContainer.innerHTML = '';
+            infoCellContainer.classList.remove('error-message');
+            infoCellContainer.classList.remove('status-message');
+
+            // Create a container for the BBCode and copy buttons
             const tagContainer = document.createElement('div');
             tagContainer.classList.add('box-container');
 
-            const bbcodeTag = '[url=' + fileData.original + ']\n  [img]' + fileData.sized + '[/img]\n[/url]';
             const preTag = document.createElement('pre');
             preTag.textContent = bbcodeTag;
             preTag.classList.add('box');
@@ -488,7 +536,7 @@ function displayUploadedFiles(files, container) {
             tagContainer.appendChild(copyTagButton);
             tagContainer.appendChild(preTag);
 
-            // Create a container for the URL and copy button
+            // Create a container for the URL and copy buttons
             const urlContainer = document.createElement('div');
             urlContainer.classList.add('box-container');
 
@@ -502,31 +550,19 @@ function displayUploadedFiles(files, container) {
             urlContainer.appendChild(copyButton);
             urlContainer.appendChild(anchorTag);
 
-            thumbnail.addEventListener('click', (event) => {
-                event.preventDefault();
-                // Create the BBCode for the image
-                const imgTag = '[url=' + uploadedFile.original + ']\n  [img]' + uploadedFile.sized + '[/img]\n[/url]\n';
-                insertIntoEditor(imgTag);
-            });
 
             // Append the URL container and tag container to the info cell
-            infoCell.appendChild(tagContainer);
-            infoCell.appendChild(urlContainer);
+            infoCellContainer.appendChild(tagContainer);
+            infoCellContainer.appendChild(urlContainer);
         }
-
-        // Append cells to the table row
-        tableRow.appendChild(thumbnailCell);
-        tableRow.appendChild(infoCell);
-
-        // Append the table row to the table
-        const table = document.createElement('table');
-        table.classList.add('blobuploader');
-        table.appendChild(tableRow);
-
-        container.appendChild(table);
     });
-    console.log('displayUploadedFiles done');
+
+    console.log('upldateUploadedFiles done');
     console.groupEnd();
+}
+
+function sanitizeId(fileName) {
+    return fileName.replace(/[^a-zA-Z0-9-_:.]/g, '_');
 }
 
 function refreshCKEditor() {
@@ -539,7 +575,7 @@ function refreshCKEditor() {
         } else {
             console.log('Editor mode is not WYSIWYG');
         }
-    } 
+    }
 }
 
 function insertIntoEditor(text) {
@@ -551,6 +587,8 @@ function insertIntoEditor(text) {
             if (editor.mode === 'wysiwyg') {
                 //console.log('Inserting text into CKEditor...');
                 editor.insertText(text);
+
+                // DO NOT REFRESH HERE.
             } else {
                 console.log('Editor mode is not WYSIWYG');
             }
@@ -628,6 +666,7 @@ function createBBCodeInsertButton(fileData, title) {
     button.addEventListener('click', (event) => {
         event.preventDefault();
         insertIntoEditor(bbcodeTag);
+        refreshCKEditor();
     });
     //console.log('button:', button);
     //console.groupEnd();
@@ -643,6 +682,7 @@ function createUrlInsertButton(fileData, title) {
     button.addEventListener('click', (event) => {
         event.preventDefault();
         insertIntoEditor(fileData.original);
+        refreshCKEditor();
     });
     //console.log('button:', button);
     //console.groupEnd();
