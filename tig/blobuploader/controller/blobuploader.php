@@ -105,7 +105,7 @@ class blobuploader
         // Check if a file is being uploaded
         if (empty($files)) {
             error_log('Error: No file specified.');
-            $this->endPerfLog('upload', 'No file specified');
+            $this->endPerfLog('upload', '============= No file specified');
             return $this->errorResponse('No file specified.', 400);
         }
 
@@ -146,14 +146,11 @@ class blobuploader
                     );
                 }
             } else {
-                $this->endPerfLog('upload', 'Finished processing upload: Error uploading file'. json_encode($file_to_upload));
+                $this->endPerfLog('upload', '============= Finished processing upload: Error uploading file'. json_encode($file_to_upload));
                 // Return an bad request response
                 return $this->errorResponse(json_encode($file_to_upload), 400);
             }
         }
-
-        error_log('response_data: ' . json_encode($response_data));
-        $this->endPerfLog('upload', 'Finished processing upload');
 
         $status = $response_data[0]['status'];
         $response = $response_data[0]['response'];
@@ -163,12 +160,14 @@ class blobuploader
         error_log('Response: ' . json_encode($response));
         error_log('Error   : ' . $error);
 
-        if ($status === 200) {
-            $response_obj = new json_response();
-            return $response_obj->send($response, $status);
-        } else {
+        if ($status !== 200) {
+            $this->endPerfLog('upload', '============= ERROR: Finished processing upload');
             return $this->errorResponse(['error'=>$error, 'message'=>$response], $status);
         }
+
+        $response_obj = new json_response();;
+        $this->endPerfLog('upload', '============= Finished processing upload');
+        return $response_obj->send($response, $status);
     }
 
     private function processSingleFileRemote(
@@ -192,7 +191,7 @@ class blobuploader
         if (!in_array($ext, $allowed_extensions)) {
             $error = 'Invalid file type: ' . htmlspecialchars($file_to_upload['name']);
             error_log($error);
-            $this->endPerfLog('processSingleFile', $error);
+            $this->endPerfLog('processSingleFileRemote', $error);
             return 
             [   
                 'status' => 400,
@@ -260,7 +259,7 @@ class blobuploader
         if (curl_errno($ch)) {
             $error = curl_error($ch);
             curl_close($ch);
-            error_log('Error processing file remotely: ' . $error);
+            $this->endPerfLog('processSingleFileRemote', $error);
             return 
             [   
                 'status' => 400,
@@ -278,9 +277,8 @@ class blobuploader
                 error_log('Decoded Response: ' . json_encode($decodedResponse));
 
                 // If response message starts with Error
-                // How do i do startswith in php?
                 if (strpos($decodedResponse['message'], 'Error') === 0) {
-                    error_log('Error processing ' . $file_to_upload['name'] . ' remotely: ' . $decodedResponse['message']);
+                    $this->endPerfLog('processSingleFileRemote', 'Error processing ' . $file_to_upload['name'] . ' remotely: ' . $decodedResponse['message']);
                     return 
                     [   
                         'status' => 400,
@@ -295,7 +293,7 @@ class blobuploader
                 $decodedResponse['sized'] = $url_base . $subdir . $this->user->data['user_id'] . '/' . basename($decodedResponse['sized']);
                 $decodedResponse['thumbnail'] = $url_base . $subdir . $this->user->data['user_id'] . '/' . basename($decodedResponse['thumbnail']);
     
-                error_log('Updated Decoded Response: ' . json_encode($decodedResponse));
+                $this->endPerfLog('processSingleFileRemote', json_encode($decodedResponse));
                 return [
                     'status' => 200,
                     'error' => '',
@@ -303,7 +301,7 @@ class blobuploader
                 ];
             } else 
             {
-                error_log('Error processing ' . $file_to_upload['name'] . ' remotely: non-JSON response received.');
+                $this->endPerfLog('processSingleFileRemote', 'Error processing ' . $file_to_upload['name'] . ' remotely: non-JSON response received.');
                 return 
                 [   
                     'status' => 400,
@@ -312,7 +310,7 @@ class blobuploader
                 ];               
             }
         } else {
-            error_log('Empty Response: No data received from server.');
+            $this->endPerfLog('processSingleFileRemote', 'Empty Response: No data received from server.');
             return 
             [   
                 'status' => 400,
@@ -340,9 +338,13 @@ class blobuploader
         $ext = strtolower(pathinfo($file_to_upload['name'], PATHINFO_EXTENSION));
         if (!in_array($ext, $allowed_extensions)) {
             $error = 'Invalid file type: ' . htmlspecialchars($file_to_upload['name']);
-            error_log($error);
-            $this->endPerfLog('processSingleFile', $error);
-            return ['error' => $error];
+            $this->endPerfLog('processSingleFileLocal', $error);
+            return 
+            [   
+                'status' => 400,
+                'response' => '',
+                'error' => $error
+            ];
         }
 
         try {
@@ -358,13 +360,22 @@ class blobuploader
         } catch (\ImagickException $e) {
             $error = 'Invalid image file: ' . htmlspecialchars($file_to_upload['name']) . ' (' . $e->getMessage() . ')';
             $this->endPerfLog('processSingleFile', $error);
-            return ['error' => $error];
-        }
+            return 
+            [   
+                'status' => 400,
+                'response' => '',
+                'error' => $error
+            ];
+       }
 
         // If $url_base has a leading slash, remove it
         if (substr($url_base, 0, 1) === '/') {
             $url_base = substr($url_base, 1);
         }
+
+        error_log('url_base: ' . $url_base);
+        error_log('upload_dir: ' . $upload_dir);
+
 
         $image_hash = $this->generateImageHash($file_to_upload['tmp_name']);
         $user_upload_dir = $url_base . $upload_dir . $this->user->data['user_id'];
@@ -379,12 +390,19 @@ class blobuploader
         $thumbnail_filename = $image_hash . '_thumbnail.' . $ext;
 
         if (file_exists($user_upload_dir . '/' . $original_filename)) {
-            $this->endPerfLog('processSingleFile', 'File exists.');
-            return [
+            $this->endPerfLog('processSingleFileLocal', 'File exists.');
+            $decodedResponse = [
                 'original' => '/' . $user_upload_dir . '/' . $original_filename,
                 'sized' => '/' . $user_upload_dir . '/' . $sized_filename,
                 'thumbnail' => '/' . $user_upload_dir . '/' . $thumbnail_filename,
+                'message' => 'File already exists.'
             ];
+            error_log('File already exists: ' . json_encode($decodedResponse));
+            return [
+                'status' => 200,
+                'response' => $decodedResponse,
+                'error' => ''
+                ];
         }
 
         if ($ext === 'heic') {
@@ -407,8 +425,12 @@ class blobuploader
             $imagick->clear();
         } catch (\Exception $e) {
             $error = 'Image processing failed for ' . $file_to_upload['name'] . ': ' . $e->getMessage();
-            $this->endPerfLog('processSingleFile', $error);
-            return ['error' => $error];
+            $this->endPerfLog('processSingleFileLocal', $error);
+            return [
+                'status' => 400,
+                'response' => '',
+                'error' => $error
+            ];
         }
 
         $this->endPerfLog('processSingleFileLocal', 'Finished.');
@@ -417,6 +439,8 @@ class blobuploader
             'original' => '/' . $user_upload_dir . '/' . basename($results['original']),
             'sized' => '/' . $user_upload_dir . '/' . basename($results['sized']),
             'thumbnail' => '/' . $user_upload_dir . '/' . basename($results['thumbnail']),
+            'status' => 200,
+            'error' => ''
         ];
     }
 
