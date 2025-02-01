@@ -367,13 +367,24 @@ async function uploadSingleFile(file) {
         });
 
         // Log info about the response object
-        console.log('Response:', response);
+        //console.log('Response:', response);
+
+        var result = {};
+
+        // try to get the result from the response
+        const responseClone = response.clone();
+        try {
+            // Clone the response before consuming it
+            result = await response.json();
+        } catch (error) {
+            // Use the cloned response to get text
+            const responseText = await responseClone.text();
+            console.error('Response was not JSON:', responseText);
+            throw new Error(`Server returned invalid JSON: ${responseText}`);
+        }
 
         switch (response.status) {
             case 200:
-                const result = await response.json();
-                //console.log('Upload result:', result);
-
                 return {
                     thumbnail: result.thumbnail,
                     sized: result.sized,
@@ -382,23 +393,18 @@ async function uploadSingleFile(file) {
                 };
 
             case 400:
-                const errResult = await response.json();
 
-                // console.log('Error uploading file - errResult.error:', errResult.error);
-                // console.log('Error uploading file - errResult.error.error:', errResult.error.error);
-                // console.log('Error uploading file - errResult.error.message.message:', errResult.error.message.message);
-
-                var error = errResult.error.error;
-                var message = errResult.error.message.message;
-                if (errResult.error.message.exception) {
+                var error = result.error.error;
+                var message = result.error.message.message;
+                if (result.error.message.exception) {
                     // console.log('Error uploading file - errResult.error.message.exception:', errResult.error.message.exception);
-                    error = error + ' ' + errResult.error.message.exception;
+                    error = error + ' ' + result.error.message.exception;
                 }
 
                 throw new Error(error);
 
             case 500:
-                throw new Error('Internal server error');
+                throw new Error('Internal server error', result);
             default:
                 throw new Error(response.status + ' ' + response.statusText);
         }

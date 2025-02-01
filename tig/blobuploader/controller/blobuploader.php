@@ -342,8 +342,8 @@ class blobuploader
             return 
             [   
                 'status' => 400,
+                'error' => $error,
                 'response' => '',
-                'error' => $error
             ];
         }
 
@@ -359,12 +359,12 @@ class blobuploader
             $imagick->readImage($file_to_upload['tmp_name']);
         } catch (\ImagickException $e) {
             $error = 'Invalid image file: ' . htmlspecialchars($file_to_upload['name']) . ' (' . $e->getMessage() . ')';
-            $this->endPerfLog('processSingleFile', $error);
+            $this->endPerfLog('processSingleFileLocal', $error);
             return 
             [   
                 'status' => 400,
+                'error' => $error,
                 'response' => '',
-                'error' => $error
             ];
        }
 
@@ -373,17 +373,11 @@ class blobuploader
             $url_base = substr($url_base, 1);
         }
 
-        error_log('url_base: ' . $url_base);
-        error_log('upload_dir: ' . $upload_dir);
-
-
         $image_hash = $this->generateImageHash($file_to_upload['tmp_name']);
         $user_upload_dir = $url_base . $upload_dir . $this->user->data['user_id'];
         if (!is_dir($user_upload_dir)) {
             mkdir($user_upload_dir, 0777, true);
         }
-
-        error_log('User upload dir: ' . $user_upload_dir);
 
         $original_filename = $image_hash . '_original.' . $ext;
         $sized_filename = $image_hash . '_sized.' . $ext;
@@ -391,16 +385,15 @@ class blobuploader
 
         if (file_exists($user_upload_dir . '/' . $original_filename)) {
             $this->endPerfLog('processSingleFileLocal', 'File exists.');
-            $decodedResponse = [
+            $response = [
                 'original' => '/' . $user_upload_dir . '/' . $original_filename,
                 'sized' => '/' . $user_upload_dir . '/' . $sized_filename,
                 'thumbnail' => '/' . $user_upload_dir . '/' . $thumbnail_filename,
-                'message' => 'File already exists.'
+                'message' => 'File already exists.',
             ];
-            error_log('File already exists: ' . json_encode($decodedResponse));
             return [
                 'status' => 200,
-                'response' => $decodedResponse,
+                'response' => $response,
                 'error' => ''
                 ];
         }
@@ -435,10 +428,14 @@ class blobuploader
 
         $this->endPerfLog('processSingleFileLocal', 'Finished.');
 
-        return [
-            'original' => '/' . $user_upload_dir . '/' . basename($results['original']),
-            'sized' => '/' . $user_upload_dir . '/' . basename($results['sized']),
+        $response = [
+            'original'  => '/' . $user_upload_dir . '/' . basename($results['original']),
+            'sized'     =>'/' . $user_upload_dir . '/' . basename($results['sized']),
             'thumbnail' => '/' . $user_upload_dir . '/' . basename($results['thumbnail']),
+            'message'   => 'File already exists.',
+        ];
+        return [
+            'response' => $response,
             'status' => 200,
             'error' => ''
         ];
