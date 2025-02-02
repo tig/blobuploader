@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const updatedFiles = await uploadFiles(files);
 
                 // Update the hidden input field
-                updateHiddenField(updatedFiles);
+                //updateHiddenField(updatedFiles);
             });
         }
 
@@ -107,7 +107,7 @@ function restoreUploadedFilesFromForm(container) {
     const hiddenField = document.getElementById('uploaded-files-field');
     const uploadedFiles = hiddenField.value ? JSON.parse(hiddenField.value) : [];
     console.log('Restored files:', uploadedFiles);
-    upldateUploadedFiles(uploadedFiles, container);
+    updateUploadedFiles(uploadedFiles, container);
     console.groupEnd();
 }
 
@@ -138,109 +138,167 @@ function getStoredFiles() {
 // or from the document drop event listener in the default editor
 // Expose this method to the global scope
 window.uploadFiles = uploadFiles;
+
 // Handle file uploads
 async function uploadFiles(files) {
     console.group('uploadFiles:', files);
-
     const uploadedFilesContainer = document.getElementById('uploaded-files');
-    const storedFiles = getStoredFiles();
 
-    var imgTags = '';
-
-    // disable editor while uploading
+    // Disable editor while uploading
     if (window.CKEDITOR) {
         var instances_names = Object.keys(CKEDITOR.instances),
             editor = CKEDITOR.instances[instances_names[0]];
         if (editor.mode === 'wysiwyg') {
             editor.setReadOnly(true);
-        } else {
-            console.log('Editor mode is not WYSIWYG');
         }
     }
 
-    // Convert FileList to Array if necessary
+    // Convert FileList to Array of fileData objects
     if (!(files instanceof Array)) {
         files = Array.from(files);
+
+        // Add fileData properties to each file
+        files = files.map(file => {
+            return {
+                name: file.name,
+                status: `Queued ${file.name}...`,
+                file: file
+            };
+        });
     }
 
-    // Create an array of promises for each file upload
-    const uploadPromises = files.map(async (file) => {
+    // Get existing files
+    const storedFiles = getStoredFiles();
+
+    // Add new files as placeholders
+    files.forEach(file => {
+        // Check if file already exists in array
+        const exists = storedFiles.some(f => f.name === file.name);
+        
+        if (!exists) {
+            storedFiles.push(file); 
+        }
+    });
+
+    console.log('storedFiles:', storedFiles);
+
+    // Initial UI update with all files
+    updateUploadedFiles(storedFiles, uploadedFilesContainer);
+
+    const uploadPromises = files.map(async (fileData) => {
         try {
-            console.group('file:', file);
-
-            const placeholder = {
-                name: file.name,
-                message: `Uploading ${file.name}...`,
-            };
-
-            // Add the placeholder to the stored files
-            storedFiles.push(placeholder);
-            upldateUploadedFiles(storedFiles, uploadedFilesContainer);
-
-            if (!isAllowedExtension(file)) {
-                console.log('non image file:', file.name);
-                throw new Error('Error uploading ' + file.name + '. Only image files are supported.');
+            if (!isAllowedExtension(fileData)) {
+                throw new Error('Error uploading ' + fileData.name + '. Only image files are supported.');
             }
 
-            console.log('Converting HEIC to JPG if needed:', file.name);
-            const convertedFile = await convertHeicToJpg(file);
-            console.log('convertedFile:', convertedFile);
+            updateFileState(fileData, {
+                status: `Converting ${fileData.name}...`,
+            });
+            const convertedFile = await convertHeicToJpg(fileData.file);
 
-            console.log('Resizing image:', convertedFile.name);
+            updateFileState(fileData, {
+                status: `Resizing ${fileData.name}...`,
+                file: convertedFile,
+            });
             const resizedFile = await resizeImage(convertedFile, maxWidth, maxHeight);
-            console.log('resizedFile:', resizedFile);
 
-            console.log('Uploading single file:', resizedFile.name);
+            updateFileState(fileData, {
+                status: `Uploading ${fileData.name}...`,
+                file: resizedFile,
+            });
             const uploadedFile = await uploadSingleFile(resizedFile);
-            uploadedFile.name = file.name;
-            console.log('uploadedFile:', uploadedFile);
 
-            imgTags = imgTags + '[url=' + uploadedFile.original + ']\n  [img]' + uploadedFile.sized + '[/img]\n[/url]\n';
+            updateFileState(fileData, {
+                status: `Uploaded ${fileData.name}`,
+                bbcode: '[url=' + uploadedFile.original + ']\n  [img]' + uploadedFile.sized + '[/img]\n[/url]',
+                thumbnail: uploadedFile.thumbnail,
+                original: uploadedFile.original,
+                sized: uploadedFile.sized,
+            });
 
-            // Find the file and update it with the uploaded file
-            const index = storedFiles.findIndex(f => f.name === file.name);
-            storedFiles[index] = uploadedFile;
+            fileData.status = `Uploaded ${fileData.name}`;
+            fileData.bbcode = '[url=' + uploadedFile.original + ']\n  [img]' + uploadedFile.sized + '[/img]\n[/url]';
+            fileData.thumbnail = uploadedFile.thumbnail;
+            fileData.original = uploadedFile.original;
+            fileData.sized = uploadedFile.sized;
+            //fileData.file = uploadedFile;
 
+            console.log('uploadedFile fileData:', fileData);
+
+            return {
+                success: true,
+                fileData: fileData               
+            };
         } catch (error) {
-            console.log('Exception uploading file:', error.message);
-            // Find the file and update it with the error
-            const index = storedFiles.findIndex(f => f.name === file.name);
-            storedFiles[index] = { error: error.message, name: file.name };
-        } finally {
-            upldateUploadedFiles(storedFiles, uploadedFilesContainer);
-            console.groupEnd();
+            const errorState = { error: error.message, name: fileData.name };
+
+            const index = storedFiles.findIndex(f => f.name === fileData.name);
+            if (index !== -1) {
+                storedFiles[index] = errorState;
+                updateUploadedFiles(storedFiles, uploadedFilesContainer);
+            }
+            fileData.status = `Error uploading ${fileData.name}`;
+            fileData.error = error.message;
+
+            return {
+                success: false,
+                fileData: fileData,
+            };
         }
     });
 
     // Wait for all uploads to complete
-    await Promise.all(uploadPromises);
+    const results = await Promise.all(uploadPromises);
 
-    // enable editor after uploading
-    if (window.CKEDITOR) {
-        var instances_names = Object.keys(CKEDITOR.instances),
-            editor = CKEDITOR.instances[instances_names[0]];
-        if (editor.mode === 'wysiwyg') {
-            editor.setReadOnly(false);
-        } else {
-            console.log('Editor mode is not WYSIWYG');
+    // Process final results for BBCode collection only
+    var imgTags = '';
+    results.forEach(result => {
+        if (result.success) {
+            imgTags += result.fileData.bbcode + '\n';
         }
+    });
+
+    console.log('imgTags:', imgTags);   
+
+    // Re-enable editor
+    if (window.CKEDITOR) {
+        editor.setReadOnly(false);
     }
 
+    // Handle auto-insert if enabled
     const autoInsert = document.getElementById('auto-insert-images');
-    const autoInsertValue = autoInsert ? autoInsert.checked : false;
-    if (autoInsertValue) {
-        // Create the BBCode for the image
+    if (autoInsert?.checked) {
         insertIntoEditor(imgTags);
         refreshCKEditor();
     }
 
-    // Remove duplicates
-    const uniqueFiles = removeDuplicateFiles(storedFiles);
-    // Update the hidden input field
-    updateHiddenField(uniqueFiles);
+    updateHiddenField(storedFiles);
 
     console.groupEnd();
-    return uniqueFiles;
+    return results;
+
+    function updateFileState(file, newState) {
+        // Find file in array
+        const index = storedFiles.findIndex(f => f.name === file.name);
+        
+        if (index !== -1) {
+            // Keep existing properties and update with new state
+            storedFiles[index] = {
+                ...storedFiles[index],  // preserve all existing properties
+                ...newState             // update with new state
+            };
+        } else {
+            // Add new file state to end of array
+            storedFiles.push({
+                name: file.name,
+                ...newState
+            });
+        }
+        
+        // Update UI
+        updateUploadedFiles(storedFiles, uploadedFilesContainer);
+    }
+
 }
 
 async function resizeImage(file, maxWidth, maxHeight) {
@@ -295,13 +353,15 @@ async function resizeImage(file, maxWidth, maxHeight) {
         img.src = URL.createObjectURL(file);
     });
 
-    var resizedFile = new File([resizedBlob], file.name, { type: file.type });
+    // Create a new File object from the resized Blob
+    const resizedFile = new File([resizedBlob], file.name, { type: 'image/jpeg', lastModified: file.lastModified });
+
+    console.log('Resized file:', resizedFile);  
+
     console.log(`Resized ${file.name} from ${(originalSize / 1024).toFixed(2)}MB to ${(resizedFile.size / 1024).toFixed(2)}MB`);
 
     console.groupEnd();
-
     hideLoadingSpinner();
-
     return resizedFile;
 }
 
@@ -385,10 +445,11 @@ async function uploadSingleFile(file) {
 
         switch (response.status) {
             case 200:
+                console.log('File uploaded successfully:', result);
                 return {
-                    thumbnail: result.thumbnail,
-                    sized: result.sized,
                     original: result.original,
+                    sized: result.sized,
+                    thumbnail: result.thumbnail,
                     message: result.message,
                 };
 
@@ -423,31 +484,35 @@ async function uploadSingleFile(file) {
     }
 }
 
-// Display uploaded files
-function upldateUploadedFiles(files, container) {
-    container.innerHTML = '';
-    console.group('upldateUploadedFiles:', files);
-
-    // hide/unhide all HTML elements with class blobuploader-hide depending on 
-    // if there are files or not
+function updateHideElements(hasFiles) {
     const hideElements = document.querySelectorAll('.blobuploader-hide');
-    if (files.length > 0) {
-        hideElements.forEach(element => {
-            element.style.display = 'block';
-        });
-    } else {
-        hideElements.forEach(element => {
-            element.style.display = 'none';
-        });
+    hideElements.forEach(element => {
+        element.style.display = hasFiles ? 'block' : 'none';
+    });
+}
+
+// Display uploaded files
+function updateUploadedFiles(fileDataArray, container) {
+
+    console.group('updateUploadedFiles:', fileDataArray);
+    if (!Array.isArray(fileDataArray) || fileDataArray.length === 0) {
+        console.warn('No files to display');
+        updateHideElements(false);
+        console.groupEnd();
+        return;
     }
 
-    files.forEach(fileData => {
+    updateHideElements(true);
+
+    fileDataArray.forEach(fileData => {
         var table;
         var thumbnail;
         var infoCellContainer;
 
-        // If the Id already exists, update it. Otherwise create a new tr.
+        // console.log('fileData:', {...fileData});
+
         if (document.getElementById(sanitizeId(fileData.name))) {
+            // Get the existing table for this file
             table = document.getElementById(sanitizeId(fileData.name));
             thumbnail = table.querySelector('img');
             infoCellContainer = table.querySelector('.info-cell-container');
@@ -484,7 +549,6 @@ function upldateUploadedFiles(files, container) {
             table.appendChild(tableRow);
         }
 
-        //console.log('fileData:', fileData);
         if (fileData.error) {
             // Display error image
             thumbnail.src = '/ext/tig/blobuploader/images/hitwhilewarm.gif';
@@ -499,27 +563,27 @@ function upldateUploadedFiles(files, container) {
 
         } else if (!fileData.thumbnail) {
             // Display loading image
+            // console.log('Displaying loading image for:', fileData.name, fileData.message);    
             thumbnail.src = '/ext/tig/blobuploader/images/roundel.gif';
-            thumbnail.alt = fileData.message;
+            thumbnail.alt = fileData.status;
             thumbnail.classList.add('loading');
 
             // Clear infoCell
             infoCellContainer.innerHTML = '';
             infoCellContainer.classList.remove('error-message');
             infoCellContainer.classList.add('status-message');
-            infoCellContainer.textContent = fileData.message;
+            infoCellContainer.textContent = fileData.status;
 
         } else {
             // Display the thumbnail
+            // console.log('Displaying uploaded image info for:', fileData.name);    
             thumbnail.src = fileData.thumbnail;
             thumbnail.alt = 'Thumbnail';
             thumbnail.classList.remove('loading');
 
-            const bbcodeTag = '[url=' + fileData.original + ']\n  [img]' + fileData.sized + '[/img]\n[/url]';
-
             thumbnail.addEventListener('click', (event) => {
                 event.preventDefault();
-                insertIntoEditor(bbcodeTag);
+                insertIntoEditor(fileData.bbcode);
                 refreshCKEditor();
             });
 
@@ -533,7 +597,7 @@ function upldateUploadedFiles(files, container) {
             tagContainer.classList.add('box-container');
 
             const preTag = document.createElement('pre');
-            preTag.textContent = bbcodeTag;
+            preTag.textContent = fileData.bbcode;
             preTag.classList.add('box');
 
             const insertTagButton = createBBCodeInsertButton(fileData, 'Insert BBCode into editor');
@@ -563,7 +627,7 @@ function upldateUploadedFiles(files, container) {
         }
     });
 
-    console.log('upldateUploadedFiles done');
+    console.log('updateUploadedFiles done');
     console.groupEnd();
 }
 
@@ -626,11 +690,9 @@ function createBBCodeCopyButton(fileData, title) {
     button.innerHTML = '<i class="copy-button fa fa-clipboard"></i>';
     button.title = title;
 
-    const bbcodeTag = '[url=' + fileData.original + ']\n  [img]' + fileData.sized + '[/img]\n[/url]';
-
     button.addEventListener('click', (event) => {
         event.preventDefault();
-        navigator.clipboard.writeText(bbcodeTag).then(() => {
+        navigator.clipboard.writeText(fileData.bbcode).then(() => {
             console.log('Copied to clipboard');
         }).catch(err => {
             console.error('Failed to copy:', err);
@@ -667,11 +729,9 @@ function createBBCodeInsertButton(fileData, title) {
     button.innerHTML = '<i class="copy-button fa fa-edit"></i>';
     button.title = title;
 
-    const bbcodeTag = '[url=' + fileData.original + ']\n  [img]' + fileData.sized + '[/img]\n[/url]\n';
-
     button.addEventListener('click', (event) => {
         event.preventDefault();
-        insertIntoEditor(bbcodeTag);
+        insertIntoEditor(fileData.bbcode + '\n');
         refreshCKEditor();
     });
     //console.log('button:', button);
