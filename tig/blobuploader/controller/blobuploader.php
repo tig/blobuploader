@@ -383,20 +383,20 @@ class blobuploader
         $sized_filename = $image_hash . '_sized.' . $ext;
         $thumbnail_filename = $image_hash . '_thumbnail.' . $ext;
 
-        if (file_exists($user_upload_dir . '/' . $original_filename)) {
-            $this->endPerfLog('processSingleFileLocal', 'File exists.');
-            $response = [
-                'original' => '/' . $user_upload_dir . '/' . $original_filename,
-                'sized' => '/' . $user_upload_dir . '/' . $sized_filename,
-                'thumbnail' => '/' . $user_upload_dir . '/' . $thumbnail_filename,
-                'message' => 'File already exists.',
-            ];
-            return [
-                'status' => 200,
-                'response' => $response,
-                'error' => ''
-                ];
-        }
+        // if (file_exists($user_upload_dir . '/' . $original_filename)) {
+        //     $this->endPerfLog('processSingleFileLocal', 'File exists.');
+        //     $response = [
+        //         'original' => '/' . $user_upload_dir . '/' . $original_filename,
+        //         'sized' => '/' . $user_upload_dir . '/' . $sized_filename,
+        //         'thumbnail' => '/' . $user_upload_dir . '/' . $thumbnail_filename,
+        //         'message' => 'File already exists.',
+        //     ];
+        //     return [
+        //         'status' => 200,
+        //         'response' => $response,
+        //         'error' => ''
+        //         ];
+        // }
 
         if ($ext === 'heic') {
             $imagick->setImageFormat('jpg');
