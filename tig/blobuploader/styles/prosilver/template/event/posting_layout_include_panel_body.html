@@ -1,53 +1,48 @@
 <style>
-    .blobuploader-container {
-        margin: 5px 0;
-        padding: 5px;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        background-color: #f9f9f9;
-        font-size: inherit;
-    }
-
-    p.blobuploader {
-        font-size: inherit;
-    }
-
-    p.blobuploader-explain {
-        font-size: inherit;
-        font-weight: bolder;
-        background-color: #a4d0fc;
-
-        /* center horizontally */
-        text-align: center;
-    }
-
-    #files-to-upload {
-        padding-bottom: 10px;
-        /* How do you center an input? */
+    /* Constrain the fieldset to fit within its parent container */
+    fieldset.blobuploader {
         display: block;
+        max-width: 100%;
+        /* Ensure it doesn't exceed the parent width */
+        width: auto;
+        /* Let it take the necessary width within constraints */
         margin: 0 auto;
+        overflow-x: hidden;
+        /* Prevent horizontal overflow */
+    }
 
+    /* Fix layout for child <dl> elements */
+    fieldset.fields2 dl.blobuploader {
+        display: flex;
+        flex-wrap: wrap;
+        /* Allow wrapping of content */
+        max-width: 100%;
+        /* Ensure it doesn't exceed the parent width */
+    }
+
+    fieldset.fields2 dt.blobuploader {
+        display: flex;
+        flex-wrap: wrap;
+        /* Allow wrapping of content */
     }
 
     tr.blobuploader {
         max-width: 100%;
-        /* Ensure  doesn't exceed the parent width */
-        border-bottom: 1px solid #afcedb;
+        /* Ensure it doesn't exceed the parent width */
     }
 
     table.blobuploader {
         max-width: 100%;
         /* Ensure it doesn't exceed the parent width */
-        margin-bottom: 3px;
     }
 
-    #uploaded-files {
+    dd#uploaded-files {
         box-sizing: border-box;
         min-width: 150px;
         /* Minimum width for readability */
         word-wrap: break-word;
         overflow-wrap: break-word;
-        background-color: #ECF1F3;
+        background-color: #f9f9f9;
         max-width: 100%;
         /* Ensure it fits within the container */
         overflow-y: auto;
@@ -69,22 +64,18 @@
     }
 
     .box-container {
-        display: flex;
-        /* Use flexbox to align items */
-        align-items: center;
-        /* Vertically center items */
+        display: flex; /* Use flexbox to align items */
+        align-items: center; /* Vertically center items */
         margin: 0;
-        margin-left: 2px;
-        /* Space between the box and the button */
-        margin-bottom: 2px;
-        font-family: inherit;
-        font-size: .9em;
+        margin-left: 5px; /* Space between the box and the button */
     }
 
     .box {
-        /* border: 1px solid #ccc; */
-        padding: 3px;
-        margin-right: 0px;
+        font-size: smaller;
+        font-family: inherit;
+        border: 1px solid #ccc;
+        padding: 5px;
+        margin-right: 5px;
         /* Space between the box and the button */
         margin-left: 5px;
         /* Space between the box and the button */
@@ -112,9 +103,9 @@
         /* Add horizontal scrolling for extremely long content */
         box-sizing: border-box;
         /* Include padding and border in width calculations */
-        padding: 2px;
+        padding: 5px;
         /* Optional: add some padding for better readability */
-        /* border: 1px solid #ccc; */
+        border: 1px solid #ccc;
         /* Optional: add a border for distinction */
         background-color: #f9f9f9;
         /* Optional: add a background color */
@@ -140,45 +131,29 @@
         }
     }
 
-    .insert-copy-all-bbcodes,
-    p.insert-copy-all-bbcodes {
+    #copy-all-bbcodes-link {
         cursor: pointer;
-        color: #013f81;
-        margin: 0;
-        padding: 0;
-        margin-bottom: 0;
-        line-height: 1em;
-        font-size: inherit;
-        /* center horizontally */
-        text-align: center;
-
-    }
-
-    .insert-copy-all-bbcodes .fa {
-        color: #013f81;
-        font-size: larger;
+        color: #007bff;
+        font-size: smaller;
     }
 
     .copy-button {
-        color: #013f81;
         margin-left: 5px;
         cursor: pointer;
-        font-size: small;
+        font-size:larger;
     }
 
     .loading-spinner {
         display: none;
-        /* Initially hidden */
-        text-align: center;
-        /* Center the spinner */
+        border: 4px solid #f3f3f3;
+        /* Light grey */
+        border-top: 4px solid #3498db;
+        /* Blue */
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 2s linear infinite;
         margin: 20px auto;
-    }
-
-    .loading-spinner img {
-        width: 50px;
-        /* Adjust the size as needed */
-        height: 50px;
-        /* Adjust the size as needed */
     }
 
     @keyframes spin {
@@ -193,31 +168,34 @@
 </style>
 
 <!-- hidden input field to the form to track uploaded files, for when Preview is pressed -->
-<input type="hidden" name="tig_blobuploader_uploaded_files" id="uploaded-files-field"
-    value="{TIG_BLOBUPLOADER_UPLOADED_FILES}">
+<input type="hidden" name="tig_blobuploader_uploaded_files" id="uploaded-files-field" value="{TIG_BLOBUPLOADER_UPLOADED_FILES}">
 
-<div class="blobuploader-container">
-    <h3>{L_BLOGUPLOADER_PANEL_TITLE}</h3>
-    <p class="blobuploader-explain">{EXPLAIN_TEXT}</p>
-    <p class="blobuploader">{L_BLOBUPLOADER_UPLOADER_PANEL_EXPLAIN}</p>
-    <input type="file" name="uploader[]" id="files-to-upload" multiple />
+<div class="panel bg3" id="uploader-panel">
+    <div class="inner">
+        <p class="box">{EXPLAIN_TEXT}</p>
+        <fieldset class="fields2 blobuploader">
+            <legend>{L_BLOBUPLOADER_CHOOSE_FILES_EXPLAIN}</legend>
 
+            <!-- File input -->
+            <dl>
+                <dt><label for="blobuploader">{L_BLOBUPLOADER_CHOOSE_FILES}</label></dt>
+                <dd><input type="file" name="uploader[]" id="files-to-upload" multiple /></dd>
+            </dl>
 
-    <!-- Uploaded files section -->
-    <div class="blobuploader blobuploader-hide">
-        <p class="blobuploader">{L_BLOBUPLOADER_FILES_EXPLAIN}</p>
-        <!-- Add the "Insert BBCodes for all images" link -->
-        <div class="insert-copy-all-bbcodes">
-            <a class="insert-copy-all-bbcodes" href="#" id="insert-all-bbcodes-link"><i class="fa fa-edit"></i>
-                {L_BLOBUPLOADER_INSERT_ALL_EXPLAIN}</a>
-            &nbsp;&nbsp;&nbsp;
-            <a class="insert-copy-all-bbcodes" href="#" id="copy-all-bbcodes-link"><i class="fa fa-clipboard"></i>
-                {L_BLOBUPLOADER_COPY_ALL_EXPLAIN}</a>
-        </div>
-
-        <div class="blobuploader" id="uploaded-files">
-            <!-- Dynamically injected content goes here -->
-            <!-- 
+            <legend class="blobuploader-hide">{L_BLOBUPLOADER_FILES_EXPLAIN}</legend>
+            
+            <!-- Uploaded files section -->
+            <dl class="blobuploader blobuploader-hide">
+                <dt>
+                    <label for="uploaded">{L_BLOBUPLOADED_FILES}</label>
+                    <!-- Add the "Copy BBCodes for all images" link -->
+                    <dd class="copy-all-bbcodes">
+                        <a href="#" id="copy-all-bbcodes-link">{L_BLOBUPLOADER_COPY_ALL_EXPLAIN}<i class="fa fa-clipboard"></i></a>
+                    </dd>                
+                </dt>
+                <dd class="blobuploader" id="uploaded-files">
+                    <!-- Dynamically injected content goes here -->
+                    <!-- 
                     <table class="blobuploader">
                         <tr>
                             <td>
@@ -240,12 +218,12 @@
                             </td>
                         </tr>
                     -->
-        </div>
-    </div>
+                </dd>
+            </dl>
+        </fieldset>
 
-    <!-- Loading spinner -->
-    <div class="loading-spinner">
-        <img src="ext/tig/blobuploader/images/roundel.gif" alt="Loading...">
+        <!-- Loading spinner -->
+        <div class="loading-spinner" id="loading-spinner"></div>
     </div>
 </div>
 
@@ -263,8 +241,6 @@
         maxWidth: '{{ MAX_ORIGINAL_WIDTH }}',
         maxHeight: '{{ MAX_ORIGINAL_HEIGHT }}'
     };
-    window.allowedExtensions = '{{ ALLOWED_EXTENSIONS }}';
 </script>
 
-<script type="module"
-    src="ext/tig/blobuploader/styles/prosilver/template/js/posting_layout_include_panel_body.js"></script>
+<script type="module" src="ext/tig/blobuploader/styles/prosilver/template/js/posting_layout_include_panel_body.js"></script>

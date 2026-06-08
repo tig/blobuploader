@@ -37,13 +37,13 @@ if (empty($lang) || !is_array($lang))
 $lang = array_merge($lang, [
 	// Uploader UI
 	'BLOGUPLOADER_PANEL_TITLE'			=> 'Uploader',
-	'BLOBUPLOADER_UPLOADER_PANEL_EXPLAIN' => 'To upload files, either drag and drop images into the editor, or click the Choose Files button to select images to upload.',
+	'BLOBUPLOADER_UPLOADER_PANEL_EXPLAIN' => 'Here you can upload images.',
 
 	'BLOBUPLOADER_CHOOSE_FILES_EXPLAIN' => 'Click the Choose Files button to select one or more images to upload.',
+	'BLOBUPLOADER_CHOOSE_FILES' => 'Choose files',
 
-	'BLOBUPLOADER_FILES_EXPLAIN' => 'Use the buttons below to insert the BBcodes into the editor, or copy to clipboard.',
-	'BLOBUPLOADER_INSERT_ALL_EXPLAIN' => 'Insert BBcodes for all images in editor  ',
-	'BLOBUPLOADER_COPY_ALL_EXPLAIN' => 'Copy BBcodes for all images to the clipboard  ',
+	'BLOBUPLOADER_FILES_EXPLAIN' => 'Click on the thumbnail or the copy button to copy the BBcode to the clipboard for pasting into your post.',
+	'BLOBUPLOADER_COPY_ALL_EXPLAIN' => 'Copy BBcodes for all images below to the clipboard  ',
 	'BLOBUPLOADED_FILES' => 'Uploaded files',
 
     'BLOBUPLOADER_ORIGINAL_PREFIX' => '_original',
@@ -70,8 +70,6 @@ $lang = array_merge($lang, [
     'ACP_BLOBUPLOADER_IMAGEPROCESSOR_APPID_EXPLAIN' => 'The App ID of the Azure Function App used for processing images.',
     'ACP_BLOBUPLOADER_BLOBSTORE_CONNECTIONSTRING' => 'Blob Storage Connection String',
     'ACP_BLOBUPLOADER_BLOBSTORE_CONNECTIONSTRING_EXPLAIN' => 'The connection string for the Azure Blob Storage account.',
-    'ACP_BLOBUPLOADER_BLOBSTORE_SAS_URL' => 'Blob SAS URL',
-    'ACP_BLOBUPLOADER_BLOBSTORE_SAS_URL_EXPLAIN' => 'The URL of the Azure Blob Storage container with Shared Access Token.',
 
     'ACP_BLOBUPLOADER_BLOB_MOUNT_DIRECTORY' => 'Blob Sub-Directory',
     'ACP_BLOBUPLOADER_BLOB_MOUNT_DIRECTORY_EXPLAIN' => 'The sub-directory where blobs are uploaded to (e.g. uploads/).',
@@ -87,18 +85,5 @@ $lang = array_merge($lang, [
     'ACP_BLOBUPLOADER_SIZED_SIZE_EXPLAIN' => 'Width and height for the sized image.',
     'ACP_BLOBUPLOADER_THUMBNAIL_SIZE' => 'Thumbnail Size',
     'ACP_BLOBUPLOADER_THUMBNAIL_SIZE_EXPLAIN' => 'Width and height for the thumbnail image.',
-
-    'ACP_BLOBUPLOADER_ADMIN_GALLERY' => 'Most Recent Images',
-
-    // UCP
-    'UCP_BLOBUPLOADER'				=> 'Settings',
-	'UCP_BLOBUPLOADER_TITLE'		=> 'Uploader',
-	// 'UCP_BLOBUPLOADER_USER'			=> 'blobuploader user',
-	// 'UCP_BLOBUPLOADER_USER_EXPLAIN'	=> 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
-	'UCP_BLOBUPLOADER_SAVED'		=> 'Settings have been saved successfully!',
-
-    'UCP_BLOBLOADER_PHOTO_GALLERY' => 'Photo Gallery',
-    'UCP_BLOBLOADER_PHOTO_GALLERY_EXPLAIN' => '%s uploaded images',
-
 
 ]);
