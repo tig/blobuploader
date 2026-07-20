@@ -1,7 +1,133 @@
 import { heicTo, isHeic } from 'heic-to';
-const { maxWidth, maxHeight } = window.acpSettings;
 
-document.addEventListener('DOMContentLoaded', function () {
+// Defaults if template vars never landed (preview/draft edge paths, cache races).
+const DEFAULT_ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'heic', 'heif', 'webp'];
+const DEFAULT_MAX_WIDTH = 3840;
+const DEFAULT_MAX_HEIGHT = 2160;
+
+function getAcpSettings() {
+    const settings = window.acpSettings || {};
+    const maxWidth = parseInt(settings.maxWidth, 10);
+    const maxHeight = parseInt(settings.maxHeight, 10);
+    return {
+        maxWidth: Number.isFinite(maxWidth) && maxWidth > 0 ? maxWidth : DEFAULT_MAX_WIDTH,
+        maxHeight: Number.isFinite(maxHeight) && maxHeight > 0 ? maxHeight : DEFAULT_MAX_HEIGHT,
+    };
+}
+
+/**
+ * Parse ACP allowed-extensions config into a lowercase Set.
+ * Accepts "jpg, jpeg, png", "jpg,jpeg,png", arrays, etc.
+ * Treats jpg/jpeg and heic/heif as pairs (either implies both).
+ */
+function getAllowedExtensionSet() {
+    const raw = window.allowedExtensions;
+    let parts = [];
+
+    if (Array.isArray(raw)) {
+        parts = raw;
+    } else if (typeof raw === 'string' && raw.trim() !== '') {
+        parts = raw.split(/[,\s]+/);
+    } else {
+        parts = DEFAULT_ALLOWED_EXTENSIONS;
+    }
+
+    const set = new Set(
+        parts
+            .map((p) => String(p).trim().toLowerCase().replace(/^\./, ''))
+            .filter(Boolean)
+    );
+
+    if (set.size === 0) {
+        DEFAULT_ALLOWED_EXTENSIONS.forEach((ext) => set.add(ext));
+    }
+
+    // jpg ↔ jpeg, heic ↔ heif
+    if (set.has('jpg') || set.has('jpeg')) {
+        set.add('jpg');
+        set.add('jpeg');
+    }
+    if (set.has('heic') || set.has('heif')) {
+        set.add('heic');
+        set.add('heif');
+    }
+
+    return set;
+}
+
+function getFileExtension(name) {
+    if (!name || typeof name !== 'string') {
+        return '';
+    }
+    const base = name.split(/[/\\]/).pop() || name;
+    const dot = base.lastIndexOf('.');
+    if (dot <= 0 || dot === base.length - 1) {
+        return '';
+    }
+    return base.slice(dot + 1).toLowerCase();
+}
+
+function mimeToExtension(mime) {
+    if (!mime || typeof mime !== 'string') {
+        return '';
+    }
+    const map = {
+        'image/jpeg': 'jpeg',
+        'image/jpg': 'jpeg',
+        'image/pjpeg': 'jpeg',
+        'image/png': 'png',
+        'image/gif': 'gif',
+        'image/heic': 'heic',
+        'image/heif': 'heif',
+        'image/webp': 'webp',
+    };
+    return map[mime.toLowerCase()] || '';
+}
+
+/**
+ * @param {File|{name?: string, file?: File, type?: string}} fileOrData
+ */
+function isAllowedExtension(fileOrData) {
+    const file = fileOrData && fileOrData.file instanceof File
+        ? fileOrData.file
+        : fileOrData;
+    const name = (fileOrData && fileOrData.name) || (file && file.name) || '';
+    const type = (file && file.type) || fileOrData.type || '';
+    const allowed = getAllowedExtensionSet();
+
+    const ext = getFileExtension(name);
+    if (ext && allowed.has(ext)) {
+        return true;
+    }
+
+    // iOS / some pickers give image/* MIME with odd or empty names
+    const fromMime = mimeToExtension(type);
+    if (fromMime && allowed.has(fromMime)) {
+        return true;
+    }
+
+    if (type && type.toLowerCase().startsWith('image/') && allowed.size > 0) {
+        // Unknown image/* still allowed if we accept any images (MIME is trustworthy enough here)
+        return true;
+    }
+
+    return false;
+}
+
+function describeRejectReason(fileOrData) {
+    const file = fileOrData && fileOrData.file instanceof File
+        ? fileOrData.file
+        : fileOrData;
+    const name = (fileOrData && fileOrData.name) || (file && file.name) || '(unnamed)';
+    const type = (file && file.type) || '';
+    const ext = getFileExtension(name) || '(none)';
+    const allowed = [...getAllowedExtensionSet()].join(', ');
+    return `Error uploading ${name}. Only image files are supported (got extension "${ext}"` +
+        (type ? `, type "${type}"` : '') +
+        `; allowed: ${allowed}).`;
+}
+
+function initBlobuploaderUi() {
     const uploadedFilesContainer = document.getElementById('uploaded-files');
     const filesToUpload = document.getElementById('files-to-upload');
     const formElement = document.getElementById('postform');
@@ -46,6 +172,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // Update the hidden input field
                 //updateHiddenField(updatedFiles);
+                // Allow re-selecting the same file after an error
+                event.target.value = '';
             });
         }
 
@@ -56,7 +184,7 @@ document.addEventListener('DOMContentLoaded', function () {
             updateHiddenField(storedFiles);
         });
     } else {
-        console.warn('Form element with id "postdata" not found.');
+        console.warn('Form element with id "postform" not found.');
     }
 
     // Add event listener for the "copy all BBcodes" link
@@ -90,7 +218,15 @@ document.addEventListener('DOMContentLoaded', function () {
             refreshCKEditor();
         });
     }
-});
+}
+
+// heic-to is a large module; by the time it loads, DOMContentLoaded may already
+// have fired — so do not rely solely on the event.
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initBlobuploaderUi);
+} else {
+    initBlobuploaderUi();
+}
 
 function showLoadingSpinner() {
     //document.querySelector('.loading-spinner').style.display = 'block';
@@ -185,10 +321,12 @@ async function uploadFiles(files) {
     // Initial UI update with all files
     updateUploadedFiles(storedFiles, uploadedFilesContainer);
 
+    const { maxWidth, maxHeight } = getAcpSettings();
+
     const uploadPromises = files.map(async (fileData) => {
         try {
             if (!isAllowedExtension(fileData)) {
-                throw new Error('Error uploading ' + fileData.name + '. Only image files are supported.');
+                throw new Error(describeRejectReason(fileData));
             }
 
             updateFileState(fileData, {
@@ -347,8 +485,8 @@ async function resizeImage(file, maxWidth, maxHeight) {
                 resolve(blob);
             }, 'image/jpeg', 0.9);
         };
-        img.onerror = (error) => {
-            reject(error);
+        img.onerror = () => {
+            reject(new Error('Browser could not decode image for resize: ' + (file && file.name ? file.name : 'unknown')));
         };
         img.src = URL.createObjectURL(file);
     });
@@ -363,10 +501,6 @@ async function resizeImage(file, maxWidth, maxHeight) {
     console.groupEnd();
     hideLoadingSpinner();
     return resizedFile;
-}
-
-function isAllowedExtension(file) {
-    return window.allowedExtensions.includes(file.name.split('.').pop().toLowerCase());
 }
 
 async function convertHeicToJpg(file) {

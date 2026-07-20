@@ -134,6 +134,26 @@ class main_listener implements EventSubscriberInterface
 	 */
 	public function set_vars_for_uploader($event){
 
+		$allowed_raw = (string) ($this->config['tig_blobuploader_allowed_extensions'] ?? 'jpg, jpeg, png, gif, heic');
+		$allowed_list = preg_split('/[,\s]+/', strtolower($allowed_raw), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+		$allowed_list = array_values(array_unique(array_map(static function ($ext) {
+			return ltrim(trim($ext), '.');
+		}, $allowed_list)));
+
+		// jpg ↔ jpeg, heic ↔ heif so either form in ACP accepts both on the client
+		if (in_array('jpg', $allowed_list, true) || in_array('jpeg', $allowed_list, true))
+		{
+			$allowed_list = array_values(array_unique(array_merge($allowed_list, ['jpg', 'jpeg'])));
+		}
+		if (in_array('heic', $allowed_list, true) || in_array('heif', $allowed_list, true))
+		{
+			$allowed_list = array_values(array_unique(array_merge($allowed_list, ['heic', 'heif'])));
+		}
+		if ($allowed_list === [])
+		{
+			$allowed_list = ['jpg', 'jpeg', 'png', 'gif', 'heic', 'heif'];
+		}
+
 		$this->template->assign_vars([
             'BLOB_MOUNT_DIRECTORY' => $this->config['tig_blobuploader_mount_dir'],
 
@@ -145,7 +165,9 @@ class main_listener implements EventSubscriberInterface
             
             'URL_BASE' => $this->config['tig_blobuploader_url_base'],
 
-            'ALLOWED_EXTENSIONS' => $this->config['tig_blobuploader_allowed_extensions'],
+            'ALLOWED_EXTENSIONS' => $allowed_raw,
+            // Safe JSON for the module script (json_encode of a string list)
+            'ALLOWED_EXTENSIONS_JSON' => json_encode(array_values($allowed_list), JSON_UNESCAPED_SLASHES),
             'MAX_ORIGINAL_WIDTH' => $this->config['tig_blobuploader_max_original_width'],
             'MAX_ORIGINAL_HEIGHT' => $this->config['tig_blobuploader_max_original_height'],
             'SIZED_WIDTH' => $this->config['tig_blobuploader_sized_width'],

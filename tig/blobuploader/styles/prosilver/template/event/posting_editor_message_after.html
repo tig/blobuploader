@@ -222,7 +222,7 @@
     <p class="blobuploader-explain">{EXPLAIN_TEXT}</p>
     <p class="blobuploader">{L_BLOBUPLOADER_UPLOADER_PANEL_EXPLAIN}</p>
     <div class="blobuploader blobuploader-selection">
-        <input type="file" name="uploader[]" id="files-to-upload" multiple />
+        <input type="file" name="uploader[]" id="files-to-upload" multiple accept="image/*,.jpg,.jpeg,.png,.gif,.heic,.heif,.webp" />
 
         <!-- Checkbox "Automatically insert images into editor." -->
         <input type="checkbox" name="auto-insert-images" id="auto-insert-images" value="1" checked>
@@ -278,20 +278,25 @@
 <script type="importmap">
     {
       "imports": {
-        "heic-to": "https://cdn.jsdelivr.net/npm/heic-to@1.1.5/dist/heic-to.min.js"
+        "heic-to": "/ext/tig/blobuploader/styles/prosilver/template/js/heic-to.min.js"
       }
     }
 </script>
 
 <script type="module">
-    // Pass maxWidth and maxHeight from server-side to client-side
+    // Pass maxWidth and maxHeight from server-side to client-side.
+    // Keep assignment here (not only in the external module) so settings exist
+    // even if the large heic-to graph is still loading.
     window.acpSettings = {
         maxWidth: '{{ MAX_ORIGINAL_WIDTH }}',
         maxHeight: '{{ MAX_ORIGINAL_HEIGHT }}'
     };
-    window.allowedExtensions = '{{ ALLOWED_EXTENSIONS }}';
+    // JSON array from PHP — avoid string.includes() substring false negatives
+    // (e.g. list without "jpeg", case mismatch, odd separators).
+    // |raw: must not HTML-escape the quotes in ["jpg","jpeg",...]
+    window.allowedExtensions = {% if ALLOWED_EXTENSIONS_JSON is defined and ALLOWED_EXTENSIONS_JSON %}{{ ALLOWED_EXTENSIONS_JSON|raw }}{% else %}["jpg","jpeg","png","gif","heic","heif","webp"]{% endif %};
 </script>
 
 <script type="module"
-    src="ext/tig/blobuploader/styles/prosilver/template/js/posting_editor_message_after.js">
+    src="/ext/tig/blobuploader/styles/prosilver/template/js/posting_editor_message_after.js?assets_version={{ ASSETS_VERSION }}">
 </script>

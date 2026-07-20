@@ -77,7 +77,9 @@ class blobuploader
             error_log('Using Local Storage: ' . $url_base . $upload_dir);
         }
 
-        $allowed_extensions = explode(', ', $this->config['tig_blobuploader_allowed_extensions']);
+        $allowed_extensions = $this->parseAllowedExtensions(
+            $this->config['tig_blobuploader_allowed_extensions'] ?? ''
+        );
         $max_original_width = (int) $this->config['tig_blobuploader_max_original_width'];
         $max_original_height = (int) $this->config['tig_blobuploader_max_original_height'];
         $sized_width = (int) $this->config['tig_blobuploader_sized_width'];
@@ -188,7 +190,7 @@ class blobuploader
         $this->startPerfLog('processSingleFileRemote', 'Start processing single file: ' . $file_to_upload['name']);
     
         $ext = strtolower(pathinfo($file_to_upload['name'], PATHINFO_EXTENSION));
-        if (!in_array($ext, $allowed_extensions)) {
+        if (!$this->isAllowedUploadExtension($ext, $allowed_extensions)) {
             $error = 'Invalid file type: ' . htmlspecialchars($file_to_upload['name']);
             error_log($error);
             $this->endPerfLog('processSingleFileRemote', $error);
@@ -336,7 +338,7 @@ class blobuploader
         $this->startPerfLog('processSingleFileLocal', 'Start processing single file: ' . $file_to_upload['name']);
 
         $ext = strtolower(pathinfo($file_to_upload['name'], PATHINFO_EXTENSION));
-        if (!in_array($ext, $allowed_extensions)) {
+        if (!$this->isAllowedUploadExtension($ext, $allowed_extensions)) {
             $error = 'Invalid file type: ' . htmlspecialchars($file_to_upload['name']);
             $this->endPerfLog('processSingleFileLocal', $error);
             return 
@@ -451,6 +453,56 @@ class blobuploader
         $hash = substr(md5($file_data), 0, 16);
         $this->endPerfLog('generateImageHash', 'Finished.');
         return $hash;
+    }
+
+    /**
+     * Normalize ACP allowed-extensions config into a lowercase list.
+     * Accepts "jpg, jpeg, png", "jpg,jpeg,png", mixed whitespace, leading dots.
+     * Ensures jpg↔jpeg and heic↔heif pairs.
+     *
+     * @param string $raw
+     * @return string[]
+     */
+    private function parseAllowedExtensions($raw)
+    {
+        $parts = preg_split('/[,\s]+/', strtolower((string) $raw), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $list = [];
+        foreach ($parts as $part)
+        {
+            $ext = ltrim(trim($part), '.');
+            if ($ext !== '')
+            {
+                $list[] = $ext;
+            }
+        }
+        $list = array_values(array_unique($list));
+
+        if (in_array('jpg', $list, true) || in_array('jpeg', $list, true))
+        {
+            $list = array_values(array_unique(array_merge($list, ['jpg', 'jpeg'])));
+        }
+        if (in_array('heic', $list, true) || in_array('heif', $list, true))
+        {
+            $list = array_values(array_unique(array_merge($list, ['heic', 'heif'])));
+        }
+
+        if ($list === [])
+        {
+            $list = ['jpg', 'jpeg', 'png', 'gif', 'heic', 'heif'];
+        }
+
+        return $list;
+    }
+
+    /**
+     * @param string   $ext
+     * @param string[] $allowed_extensions
+     * @return bool
+     */
+    private function isAllowedUploadExtension($ext, array $allowed_extensions)
+    {
+        $ext = strtolower(ltrim((string) $ext, '.'));
+        return $ext !== '' && in_array($ext, $allowed_extensions, true);
     }
 
     private function normalizeFiles($files)
