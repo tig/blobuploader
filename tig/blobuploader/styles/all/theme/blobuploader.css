@@ -153,31 +153,54 @@
 	height: 50px;
 }
 
-/* UCP photo gallery — scoped to panel containing #photo-grid */
-#photo-grid.photo-grid,
-.panel #photo-grid.photo-grid {
+/* UCP photo gallery — dense grid matching ACP recent photos + copy BBCode */
+.blobuploader-ucp-gallery #photo-grid.photo-grid,
+#photo-grid.photo-grid {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 5px;
+	gap: 10px 8px;
+	align-items: flex-start;
 }
 
+.blobuploader-ucp-gallery #photo-grid .photo-box,
 #photo-grid .photo-box {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	margin: 5px;
+	margin: 0;
+	width: 110px;
 }
 
+.blobuploader-ucp-gallery #photo-grid .photo-link,
+#photo-grid .photo-link {
+	display: block;
+	line-height: 0;
+}
+
+.blobuploader-ucp-gallery #photo-grid img,
+#photo-grid.photo-grid img,
 #photo-grid .photo-box img {
-	width: 200px;
+	display: block;
+	width: 100px;
 	height: auto;
 	cursor: pointer;
+}
+
+.blobuploader-ucp-gallery .blobuploader-empty {
+	margin: 0.5em 0;
 }
 
 #photo-grid .copy-container {
 	margin-top: 4px;
 	font-family: inherit;
 	text-align: center;
+	width: 100%;
+}
+
+#photo-grid .copy-container .button {
+	font-size: 0.85em;
+	padding: 2px 6px;
+	white-space: nowrap;
 }
 
 /* ACP recent gallery */

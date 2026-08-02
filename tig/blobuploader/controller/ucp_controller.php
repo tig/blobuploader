@@ -10,6 +10,8 @@
 
 namespace tig\blobuploader\controller;
 
+use tig\blobuploader\helpers\RecentPhotos;
+
 /**
  * blobuploader UCP controller.
  */
@@ -47,10 +49,10 @@ class ucp_controller
 	 * @param \phpbb\config\config				$config		Config object
 	 */
 	public function __construct(
-		\phpbb\db\driver\driver_interface $db, 
-		\phpbb\language\language $language, 
-		\phpbb\request\request $request, 
-		\phpbb\template\template $template, 
+		\phpbb\db\driver\driver_interface $db,
+		\phpbb\language\language $language,
+		\phpbb\request\request $request,
+		\phpbb\template\template $template,
 		\phpbb\user $user,
 		\phpbb\config\config $config)
 	{
@@ -72,41 +74,27 @@ class ucp_controller
 		// Create a form key for preventing CSRF attacks
 		add_form_key('tig_blobuploader_ucp');
 
-		// // Create an array to collect errors that will be output to the user
-		// $errors = [];
+		$this->language->add_lang('common', 'tig/blobuploader');
 
-		// // Request the options the user can configure
-		// $data = [
-		// 	//'user_blobuploader' => $this->request->variable('user_blobuploader', $this->user->data['user_blobuploader']),
-		// ];
-
-		// // Is the form being submitted to us?
-		// if ($this->request->is_set_post('submit'))
-		// {
-		// 	// // Test if the submitted form is valid
-		// 	// if (!check_form_key('tig_blobuploader_ucp'))
-		// 	// {
-		// 	// 	$errors[] = $this->language->lang('FORM_INVALID');
-		// 	// }
-
-		// 	// // If no errors, process the form data
-		// 	// if (empty($errors))
-		// 	// {
-		// 	// 	// Set the options the user configured
-		// 	// 	$sql = 'UPDATE ' . USERS_TABLE . '
-		// 	// 		SET ' . $this->db->sql_build_array('UPDATE', $data) . '
-		// 	// 		WHERE user_id = ' . (int) $this->user->data['user_id'];
-		// 	// 	$this->db->sql_query($sql);
-
-		// 	// 	// Option settings have been updated
-		// 	// 	// Confirm this to the user and provide (automated) link back to previous page
-		// 	// 	meta_refresh(3, $this->u_action);
-		// 	// 	$message = $this->language->lang('UCP_BLOBUPLOADER_SAVED') . '<br /><br />' . $this->language->lang('RETURN_UCP', '<a href="' . $this->u_action . '">', '</a>');
-		// 	// 	trigger_error($message);
-		// 	// }
-		// }
-
+		$errors = [];
 		$s_errors = !empty($errors);
+
+		// Local/mount mode is the live path (tig_use_blob_service=0).
+		// Config is a string — cast so Twig {% if USE_BLOB_SERVICE %} is reliable.
+		$use_blob = ((int) $this->config['tig_use_blob_service']) === 1;
+		$user_id = (int) $this->user->data['user_id'];
+		$user_photos = [];
+
+		if (!$use_blob)
+		{
+			$user_photos = RecentPhotos::list_for_user(
+				$user_id,
+				$this->config['tig_blobuploader_url_base'],
+				$this->config['tig_blobuploader_mount_dir']
+			);
+		}
+
+		$photo_count = count($user_photos);
 
 		// Set output variables for display in the template
 		$this->template->assign_vars([
@@ -115,15 +103,32 @@ class ucp_controller
 
 			'U_UCP_ACTION'	=> $this->u_action,
 
-            'IMAGEPROCESSOR_FN_URL' => $this->config['tig_imageprocessor_fn_url'],
+			'IMAGEPROCESSOR_FN_URL' => $this->config['tig_imageprocessor_fn_url'],
 
-            'BLOBSTORE_CONNECTIONSTRING' => $this->config['tig_blobstore_connectionstring'],
-            'BLOBSTORE_SAS_URL' => $this->config['tig_blobstore_sas_url'],
+			'BLOBSTORE_CONNECTIONSTRING' => $this->config['tig_blobstore_connectionstring'],
+			'BLOBSTORE_SAS_URL' => $this->config['tig_blobstore_sas_url'],
 			'URL_BASE' => $this->config['tig_blobuploader_url_base'],
 
-			'USER_ID'		=> $this->user->data['user_id'],
-           
+			'USER_ID'		=> $user_id,
+
+			// Local-mode gallery (server-rendered; mirrors ACP recent photos)
+			'USE_BLOB_SERVICE' => $use_blob,
+			'S_LOCAL_GALLERY' => !$use_blob,
+			'S_HAS_USER_PHOTOS' => !empty($user_photos),
+			'PHOTO_COUNT' => $photo_count,
+			'GALLERY_EXPLAIN' => $this->language->lang('UCP_BLOBLOADER_PHOTO_GALLERY_EXPLAIN', $photo_count),
+			'L_COPY_BBCODE' => $this->language->lang('UCP_BLOBLOADER_COPY_BBCODE'),
+			'L_COPIED' => $this->language->lang('UCP_BLOBLOADER_COPIED'),
 		]);
+
+		foreach ($user_photos as $photo)
+		{
+			$this->template->assign_block_vars('user_photos', [
+				'THUMBNAIL' => $photo['thumbnail'] ?? '',
+				'ORIGINAL'  => $photo['original'] ?? '',
+				'SIZED'     => $photo['sized'] ?? '',
+			]);
+		}
 	}
 
 	/**

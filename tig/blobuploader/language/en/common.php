@@ -101,6 +101,10 @@ $lang = array_merge($lang, [
 
     'UCP_BLOBLOADER_PHOTO_GALLERY' => 'Photo Gallery',
     'UCP_BLOBLOADER_PHOTO_GALLERY_EXPLAIN' => '%s uploaded images',
+    'UCP_BLOBLOADER_NO_PHOTOS' => 'No uploaded images yet. Photos you upload when posting will appear here.',
+    'UCP_BLOBLOADER_OPEN_ORIGINAL' => 'Open original',
+    'UCP_BLOBLOADER_COPY_BBCODE' => 'Copy BBcode',
+    'UCP_BLOBLOADER_COPIED' => 'Copied!',
 
 
 ]);

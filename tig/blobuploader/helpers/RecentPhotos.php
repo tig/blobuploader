@@ -120,6 +120,70 @@ class RecentPhotos
 	}
 
 	/**
+	 * List one user's local thumbnails (UCP gallery).
+	 * Single-directory glob is cheap even on rclone/FUSE.
+	 *
+	 * @param int    $user_id
+	 * @param string $url_base
+	 * @param string $mount_dir
+	 * @param int    $limit  0 = no limit
+	 * @return array<int, array{thumbnail:string,original:string,sized:string,mtime:int}>
+	 */
+	public static function list_for_user($user_id, $url_base, $mount_dir, $limit = 0)
+	{
+		$user_id = (int) $user_id;
+		if ($user_id < 1)
+		{
+			return [];
+		}
+
+		$fs_root = self::uploads_fs_root($url_base, $mount_dir);
+		$url_prefix = self::uploads_url_prefix($url_base, $mount_dir);
+		$user_dir = rtrim($fs_root, '/') . '/' . $user_id;
+
+		if (!is_dir($user_dir))
+		{
+			return [];
+		}
+
+		$thumbs = @glob($user_dir . '/*_thumbnail.*') ?: [];
+		$items = [];
+
+		foreach ($thumbs as $path)
+		{
+			if (!is_file($path))
+			{
+				continue;
+			}
+			$base = basename($path);
+			$orig = str_replace('_thumbnail', '_original', $base);
+			$sized = str_replace('_thumbnail', '_sized', $base);
+			$items[] = [
+				'thumbnail' => $url_prefix . $user_id . '/' . $base,
+				'original'  => $url_prefix . $user_id . '/' . $orig,
+				'sized'     => $url_prefix . $user_id . '/' . $sized,
+				'mtime'     => (int) (@filemtime($path) ?: 0),
+			];
+		}
+
+		if (empty($items))
+		{
+			return [];
+		}
+
+		usort($items, function ($a, $b) {
+			return $b['mtime'] <=> $a['mtime'];
+		});
+
+		if ($limit > 0)
+		{
+			$items = array_slice($items, 0, (int) $limit);
+		}
+
+		return $items;
+	}
+
+	/**
 	 * Budgeted scan of local user folders to (re)build the index.
 	 * Safe for ACP: stops after $time_budget seconds.
 	 *
