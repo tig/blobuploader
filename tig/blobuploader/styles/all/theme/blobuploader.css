@@ -1,0 +1,188 @@
+/*
+ * Blob Uploader — layout only.
+ * Colors, borders, radius, and button look come from the board style
+ * (.panel, .notice, .button, a, .error, .inputbox, etc.).
+ */
+
+/* Posting panel: use prosilver .panel / .bg3 on the markup */
+.blobuploader-panel {
+	margin: 5px 0;
+}
+
+.blobuploader-panel > .inner > h3:first-child {
+	margin-top: 0;
+}
+
+.blobuploader-selection {
+	margin: 0.5em 0;
+	padding: 0.25em 0;
+}
+
+.blobuploader-selection input[type="file"] {
+	max-width: 100%;
+}
+
+table.blobuploader {
+	width: 100%;
+	max-width: 100%;
+	margin-bottom: 3px;
+	border-collapse: collapse;
+}
+
+/* File list: no private palette — board surfaces win */
+#uploaded-files {
+	box-sizing: border-box;
+	min-width: 150px;
+	max-width: 100%;
+	overflow-y: auto;
+	word-wrap: break-word;
+	overflow-wrap: break-word;
+	padding: 5px 0;
+}
+
+.box-container {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	margin: 0 0 2px 2px;
+	font-family: inherit;
+	font-size: 0.9em;
+	gap: 4px;
+}
+
+.box {
+	padding: 3px;
+	margin-left: 5px;
+	max-width: 100%;
+	word-wrap: break-word;
+	overflow-wrap: break-word;
+	white-space: normal;
+	box-sizing: border-box;
+}
+
+/* Long BBCode / URL lines wrap inside the panel */
+.box-container pre.box {
+	max-width: 100%;
+	white-space: pre-wrap;
+	word-wrap: break-word;
+	overflow-wrap: anywhere;
+	overflow-x: auto;
+	box-sizing: border-box;
+	padding: 2px;
+	margin: 0;
+	font-family: inherit;
+	font-size: inherit;
+}
+
+.thumbnail td {
+	width: 100px;
+}
+
+.thumbnail,
+img.thumbnail {
+	flex-shrink: 0;
+	width: 100px;
+	height: auto;
+	object-fit: contain;
+	margin-bottom: 5px;
+	margin-right: 10px;
+	vertical-align: top;
+}
+
+.loading {
+	width: 100px;
+	height: auto;
+}
+
+.info-cell-container {
+	margin: 0 0 2px 2px;
+	font-family: inherit;
+	font-size: 0.9em;
+}
+
+/* Prefer board .error for failures; keep padding helper */
+.status-message,
+.error-message {
+	padding-left: 5px;
+}
+
+.insert-copy-all-bbcodes,
+p.insert-copy-all-bbcodes {
+	cursor: pointer;
+	margin: 0;
+	padding: 0;
+	line-height: 1.4em;
+	font-size: inherit;
+	text-align: center;
+}
+
+/* Icon size only — link color from board `a` */
+.insert-copy-all-bbcodes .fa,
+.insert-copy-all-bbcodes .icon {
+	font-size: larger;
+}
+
+/* Board .button spacing next to BBCode/URL text */
+.box-container .button {
+	margin-left: 4px;
+	flex-shrink: 0;
+}
+
+.loading-spinner {
+	display: none;
+	text-align: center;
+	margin: 20px auto;
+}
+
+.loading-spinner img {
+	width: 50px;
+	height: 50px;
+}
+
+/* UCP / ACP photo grids — layout only */
+.photo-grid {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 5px;
+}
+
+.photo-box {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	margin: 5px;
+}
+
+.photo-box img {
+	width: 200px;
+	height: auto;
+	cursor: pointer;
+}
+
+.copy-container {
+	margin-top: 4px;
+	font-family: inherit;
+	text-align: center;
+}
+
+#recent-photos.photo-grid img,
+.photo-grid img {
+	width: 100px;
+	height: auto;
+	cursor: pointer;
+}
+
+.photo-box img {
+	width: 200px;
+}
+
+@media (max-width: 768px) {
+	#uploaded-files dt {
+		flex-direction: column;
+		white-space: normal;
+	}
+
+	.thumbnail {
+		margin-bottom: 10px;
+	}
+}

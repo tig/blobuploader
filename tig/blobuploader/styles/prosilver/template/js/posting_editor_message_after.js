@@ -559,6 +559,7 @@ function updateUploadedFiles(fileDataArray, container) {
             infoCellContainer.innerHTML = '';
             infoCellContainer.classList.remove('status-message');
             infoCellContainer.classList.add('error-message');
+            infoCellContainer.classList.add('error');
             infoCellContainer.textContent = fileData.error;
 
         } else if (!fileData.thumbnail) {
@@ -571,6 +572,7 @@ function updateUploadedFiles(fileDataArray, container) {
             // Clear infoCell
             infoCellContainer.innerHTML = '';
             infoCellContainer.classList.remove('error-message');
+            infoCellContainer.classList.remove('error');
             infoCellContainer.classList.add('status-message');
             infoCellContainer.textContent = fileData.status;
 
@@ -590,6 +592,7 @@ function updateUploadedFiles(fileDataArray, container) {
             // Display the file info
             infoCellContainer.innerHTML = '';
             infoCellContainer.classList.remove('error-message');
+            infoCellContainer.classList.remove('error');
             infoCellContainer.classList.remove('status-message');
 
             // Create a container for the BBCode and copy buttons
@@ -683,76 +686,52 @@ function insertIntoEditor(text) {
     }
 }
 
-// Create copy button
-function createBBCodeCopyButton(fileData, title) {
-    //console.group('createUrlCopyButton:', fileData);
+// Board-styled control (inherits .button / .button2 from active style)
+function createBoardIconButton(iconClasses, title, onClick) {
     const button = document.createElement('button');
-    button.innerHTML = '<i class="copy-button fa fa-clipboard"></i>';
+    button.type = 'button';
+    button.className = 'button button2';
     button.title = title;
-
+    button.innerHTML = '<i class="icon ' + iconClasses + '" aria-hidden="true"></i>';
     button.addEventListener('click', (event) => {
         event.preventDefault();
+        onClick(event);
+    });
+    return button;
+}
+
+function createBBCodeCopyButton(fileData, title) {
+    return createBoardIconButton('fa-clipboard fa-fw', title, () => {
         navigator.clipboard.writeText(fileData.bbcode).then(() => {
             console.log('Copied to clipboard');
         }).catch(err => {
             console.error('Failed to copy:', err);
         });
     });
-    //console.log('button:', button);
-    //console.groupEnd();    
-    return button;
 }
 
 function createUrlCopyButton(fileData, title) {
-    //console.group('createUrlCopyButton:', fileData);
-    const button = document.createElement('button');
-    button.innerHTML = '<i class="copy-button fa fa-clipboard"></i>';
-    button.title = title;
-
-    button.addEventListener('click', (event) => {
-        event.preventDefault();
+    return createBoardIconButton('fa-clipboard fa-fw', title, () => {
         navigator.clipboard.writeText(fileData.original).then(() => {
             console.log('Copied to clipboard');
         }).catch(err => {
             console.error('Failed to copy:', err);
         });
     });
-    //console.log('button:', button);
-    //console.groupEnd();
-    return button;
 }
 
-// Create copy button
 function createBBCodeInsertButton(fileData, title) {
-    //console.group('createBBCodeInsertButton:', fileData);
-    const button = document.createElement('button');
-    button.innerHTML = '<i class="copy-button fa fa-edit"></i>';
-    button.title = title;
-
-    button.addEventListener('click', (event) => {
-        event.preventDefault();
+    return createBoardIconButton('fa-edit fa-fw', title, () => {
         insertIntoEditor(fileData.bbcode + '\n');
         refreshCKEditor();
     });
-    //console.log('button:', button);
-    //console.groupEnd();
-    return button;
 }
 
 function createUrlInsertButton(fileData, title) {
-    //console.group('createUrlInsertButton:', fileData);
-    const button = document.createElement('button');
-    button.innerHTML = '<i class="copy-button fa fa-edit"></i>';
-    button.title = title;
-
-    button.addEventListener('click', (event) => {
-        event.preventDefault();
+    return createBoardIconButton('fa-edit fa-fw', title, () => {
         insertIntoEditor(fileData.original);
         refreshCKEditor();
     });
-    //console.log('button:', button);
-    //console.groupEnd();
-    return button;
 }
 
 // Remove duplicate files based on the `sized` URL

@@ -102,12 +102,8 @@
 
 </form>
 
+{# Gallery layout; ACP chrome colors come from the admin style #}
 <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
-    }
     #recent-photos {
       display: flex;
       flex-wrap: wrap;
@@ -116,18 +112,20 @@
     .photo-grid img {
       width: 100px;
       height: auto;
-      border-radius: 5px;
       cursor: pointer;
     }
     .photo-grid a {
       display: inline-block;
+    }
+    #error-message {
+      /* use ACP error colour if present */
     }
   </style>
 
 <!-- Admin photo gallery -->
  <div id="blobuploader-admin-gallery" class="blobuploader-admin-gallery">
     <h2>{{ lang('ACP_BLOBUPLOADER_ADMIN_GALLERY') }}</h2>
-    <div id="error-message" style="color: red;"></div>
+    <div id="error-message" class="error"></div>
     <div id="recent-photos" class="photo-grid"></div>
 </div>
 
