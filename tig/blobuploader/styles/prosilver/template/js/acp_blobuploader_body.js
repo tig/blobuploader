@@ -27,15 +27,20 @@ document.addEventListener('DOMContentLoaded', function () {
     const thumbnailBlobRegex = /^uploads\/(\d+)\/([\w\d]+)_thumbnail\.(.+)$/; // Only match `_thumbnail` blobs
     const pageSize = 100; // Number of blobs to fetch per request
 
-    // Fetch all `_thumbnail` blobs under /uploads
+    // Fetch all `_thumbnail` blobs under /uploads (Azure Blob list API)
     async function fetchThumbnailBlobs() {
         let marker = "";
         const blobs = [];
+        const sasUrl = window.blobStoreSASUrl || '';
+
+        if (!sasUrl) {
+            throw new Error('Blob SAS URL is not configured');
+        }
 
         try {
             do {
                 const response = await fetch(
-                    `${window.blobStoreSASUrl}&restype=container&comp=list&prefix=uploads/&marker=${marker}&maxresults=${pageSize}`
+                    `${sasUrl}&restype=container&comp=list&prefix=uploads/&marker=${marker}&maxresults=${pageSize}`
                 );
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -73,14 +78,14 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Render the most recent `_thumbnail` photos
-    function renderRecentPhotos(blobs) {
+    // Render Azure list results
+    function renderRecentPhotosAzure(blobs) {
         const recentPhotosElement = document.getElementById("recent-photos");
-        recentPhotosElement.innerHTML = ""; // Clear previous content
+        recentPhotosElement.innerHTML = "";
 
         blobs.slice(0, maxPhotos).forEach(blob => {
             const thumbnailUrl = `${window.blobStoreSASUrl.split("?")[0]}/${blob.name}`;
-            const originalUrl = thumbnailUrl.replace("_thumbnail", "_original"); // Infer original URL from thumbnail
+            const originalUrl = thumbnailUrl.replace("_thumbnail", "_original");
 
             const link = document.createElement("a");
             link.href = originalUrl;
@@ -94,13 +99,46 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // Render local-mode photos from server-side index / seed
+    function renderRecentPhotosLocal(photos) {
+        const recentPhotosElement = document.getElementById("recent-photos");
+        recentPhotosElement.innerHTML = "";
+
+        if (!photos || !photos.length) {
+            const errorMessage = document.getElementById("error-message");
+            errorMessage.textContent = 'No recent photos in the local index yet. New uploads will appear here automatically.';
+            return;
+        }
+
+        photos.slice(0, maxPhotos).forEach(photo => {
+            const link = document.createElement("a");
+            link.href = photo.original || photo.thumbnail;
+            link.target = "_blank";
+
+            const img = document.createElement("img");
+            img.src = photo.thumbnail;
+            img.alt = photo.thumbnail || 'thumbnail';
+            link.appendChild(img);
+
+            recentPhotosElement.appendChild(link);
+        });
+    }
+
     // Main function
     async function main() {
         const errorMessage = document.getElementById("error-message");
+        const useBlob = !!window.useBlobService;
+        const localPhotos = Array.isArray(window.recentPhotosLocal) ? window.recentPhotosLocal : [];
 
         try {
+            // Local filesystem / mount mode: never hit the Azure list API
+            if (!useBlob || !window.blobStoreSASUrl) {
+                renderRecentPhotosLocal(localPhotos);
+                return;
+            }
+
             const blobs = await fetchThumbnailBlobs();
-            renderRecentPhotos(blobs);
+            renderRecentPhotosAzure(blobs);
         } catch (error) {
             errorMessage.textContent = `Failed to load recent photos: ${error.message}`;
         }

@@ -10,6 +10,8 @@
 
 namespace tig\blobuploader\controller;
 
+use tig\blobuploader\helpers\RecentPhotos;
+
 /**
  * Blob Uploader ACP controller.
  */
@@ -136,6 +138,21 @@ class acp_controller
 
         $s_errors = !empty($errors);
 
+        // Local-mode gallery: read JSON index; budgeted seed if empty.
+        $use_blob = !empty($this->config['tig_use_blob_service']);
+        $recent_photos = [];
+        if (!$use_blob)
+        {
+            $recent_photos = RecentPhotos::read();
+            if (empty($recent_photos))
+            {
+                $recent_photos = RecentPhotos::seed_from_filesystem(
+                    $this->config['tig_blobuploader_url_base'],
+                    $this->config['tig_blobuploader_mount_dir']
+                );
+            }
+        }
+
         // Set output variables for display in the template
         $current_explain_text = $this->config_text->get('tig_blobuploader_explain_text', $this->config['tig_blobuploader_explain_text']);
         $this->template->assign_vars([
@@ -164,6 +181,8 @@ class acp_controller
             'SIZED_HEIGHT' => $this->config['tig_blobuploader_sized_height'],
             'THUMBNAIL_WIDTH' => $this->config['tig_blobuploader_thumbnail_width'],
             'THUMBNAIL_HEIGHT' => $this->config['tig_blobuploader_thumbnail_height'],
+
+            'RECENT_PHOTOS_JSON' => json_encode($recent_photos, JSON_UNESCAPED_SLASHES),
         ]);
     }
 

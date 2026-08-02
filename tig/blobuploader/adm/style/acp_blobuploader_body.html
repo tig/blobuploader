@@ -132,8 +132,11 @@
 {% include 'overall_footer.html' %}
 
 <script type="module">
-    // Pass maxWidth and maxHeight from server-side to client-side
-    window.blobStoreSASUrl = '{{ BLOBSTORE_SAS_URL }}';
+    // Azure list API (blob-service mode only)
+    window.blobStoreSASUrl = '{{ BLOBSTORE_SAS_URL|e('js') }}';
+    window.useBlobService = {% if USE_BLOB_SERVICE %}true{% else %}false{% endif %};
+    // Local/mount mode: server-built recent list (JSON index + budgeted seed)
+    window.recentPhotosLocal = {{ RECENT_PHOTOS_JSON|raw }};
 </script>
 
 <script type="module" src="/ext/tig/blobuploader/styles/prosilver/template/js/acp_blobuploader_body.js"></script>

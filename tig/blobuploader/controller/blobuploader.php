@@ -12,6 +12,7 @@ namespace tig\blobuploader\controller;
 
 use Symfony\Component\HttpFoundation\Response;
 use tig\blobuploader\helpers\ImageProcessor;
+use tig\blobuploader\helpers\RecentPhotos;
 use phpbb\json_response;
 
 class blobuploader
@@ -434,6 +435,10 @@ class blobuploader
             'thumbnail' => '/' . $user_upload_dir . '/' . basename($results['thumbnail']),
             'message'   => 'File already exists.',
         ];
+
+        // Keep ACP "most recent" gallery in sync without scanning FUSE mounts.
+        RecentPhotos::prepend($response['thumbnail'], $response['original']);
+
         return [
             'response' => $response,
             'status' => 200,
