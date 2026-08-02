@@ -106,5 +106,8 @@ $lang = array_merge($lang, [
     'UCP_BLOBLOADER_COPY_BBCODE' => 'Copy BBcode',
     'UCP_BLOBLOADER_COPIED' => 'Copied!',
 
+    // Profile
+    'PROFILE_BLOBLOADER_PHOTO_GALLERY' => 'Uploaded photos',
+
 
 ]);

@@ -14,6 +14,7 @@ namespace tig\blobuploader\event;
  * @ignore
  */
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use tig\blobuploader\helpers\RecentPhotos;
 
 /**
  * Blob Uploader Event listener.
@@ -66,8 +67,6 @@ class main_listener implements EventSubscriberInterface
 		$this->template = $template;
 		$this->php_ext  = $php_ext;
         $this->request = $request;
-
-		//error_log('main_listener.php: __construct()');
 	}
 
 	public static function getSubscribedEvents()
@@ -77,6 +76,7 @@ class main_listener implements EventSubscriberInterface
 			'core.page_header' 					=> 'on_page_header',
 			'core.posting_modify_message_text' 	=> 'handle_preview',
 			'core.posting_modify_default_variables' => 'set_vars_for_uploader',
+			'core.memberlist_view_profile'		=> 'on_view_profile',
 		];
 	}
 
@@ -117,7 +117,6 @@ class main_listener implements EventSubscriberInterface
 	 */
 	public function load_language_on_setup($event)
 	{
-		//error_log('main_listener.php: load_language_on_setup()');
 		$lang_set_ext = $event['lang_set_ext'];
 		$lang_set_ext[] = [
 			'ext_name' => 'tig/blobuploader',
@@ -153,5 +152,66 @@ class main_listener implements EventSubscriberInterface
             'THUMBNAIL_WIDTH' => $this->config['tig_blobuploader_thumbnail_width'],
             'THUMBNAIL_HEIGHT' => $this->config['tig_blobuploader_thumbnail_height'],
         ]);
+	}
+
+	/**
+	 * Show a member's uploaded photos on their profile (below signature).
+	 * Local/mount mode only — mirrors UCP gallery listing.
+	 *
+	 * @param \phpbb\event\data $event
+	 */
+	public function on_view_profile($event)
+	{
+		// Config is a string — cast so Twig {% if %} is reliable
+		$use_blob = ((int) $this->config['tig_use_blob_service']) === 1;
+		if ($use_blob)
+		{
+			$this->template->assign_vars([
+				'S_BLOBUPLOADER_PROFILE_GALLERY' => false,
+			]);
+			return;
+		}
+
+		$member = $event['member'];
+		$user_id = (int) ($member['user_id'] ?? 0);
+		if ($user_id < 1)
+		{
+			$this->template->assign_vars([
+				'S_BLOBUPLOADER_PROFILE_GALLERY' => false,
+			]);
+			return;
+		}
+
+		$photos = RecentPhotos::list_for_user(
+			$user_id,
+			$this->config['tig_blobuploader_url_base'],
+			$this->config['tig_blobuploader_mount_dir']
+		);
+
+		if (empty($photos))
+		{
+			$this->template->assign_vars([
+				'S_BLOBUPLOADER_PROFILE_GALLERY' => false,
+			]);
+			return;
+		}
+
+		$photo_count = count($photos);
+
+		$this->template->assign_vars([
+			'S_BLOBUPLOADER_PROFILE_GALLERY' => true,
+			'PROFILE_GALLERY_EXPLAIN' => $this->language->lang('UCP_BLOBLOADER_PHOTO_GALLERY_EXPLAIN', $photo_count),
+			'L_COPY_BBCODE' => $this->language->lang('UCP_BLOBLOADER_COPY_BBCODE'),
+			'L_COPIED' => $this->language->lang('UCP_BLOBLOADER_COPIED'),
+		]);
+
+		foreach ($photos as $photo)
+		{
+			$this->template->assign_block_vars('profile_photos', [
+				'THUMBNAIL' => $photo['thumbnail'] ?? '',
+				'ORIGINAL'  => $photo['original'] ?? '',
+				'SIZED'     => $photo['sized'] ?? '',
+			]);
+		}
 	}
 }
