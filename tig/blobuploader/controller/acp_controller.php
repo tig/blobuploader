@@ -139,7 +139,9 @@ class acp_controller
         $s_errors = !empty($errors);
 
         // Local-mode gallery: read JSON index; budgeted seed if empty.
-        $use_blob = !empty($this->config['tig_use_blob_service']);
+        // Config values are strings — cast so Twig {% if USE_BLOB_SERVICE %} is reliable
+        // (Twig treats the string "0" as truthy).
+        $use_blob = ((int) $this->config['tig_use_blob_service']) === 1;
         $recent_photos = [];
         if (!$use_blob)
         {
@@ -165,7 +167,7 @@ class acp_controller
 
             'EXPLAIN_TEXT' => $current_explain_text,
 
-            'USE_BLOB_SERVICE' => $this->config['tig_use_blob_service'],
+            'USE_BLOB_SERVICE' => $use_blob,
             'IMAGEPROCESSOR_FN_URL' => $this->config['tig_imageprocessor_fn_url'],
             'IMAGEPROCESSOR_APPID' => $this->config['tig_imageprocessor_appid'],
 
@@ -182,8 +184,19 @@ class acp_controller
             'THUMBNAIL_WIDTH' => $this->config['tig_blobuploader_thumbnail_width'],
             'THUMBNAIL_HEIGHT' => $this->config['tig_blobuploader_thumbnail_height'],
 
-            'RECENT_PHOTOS_JSON' => json_encode($recent_photos, JSON_UNESCAPED_SLASHES),
+            // Server-rendered for local mode (avoids Azure list API + JS cache issues)
+            'S_LOCAL_GALLERY' => !$use_blob,
+            'S_HAS_RECENT_PHOTOS' => !empty($recent_photos),
         ]);
+
+        // phpBB block vars are more reliable in ADM Twig than raw arrays
+        foreach ($recent_photos as $photo)
+        {
+            $this->template->assign_block_vars('recent_photos', [
+                'THUMBNAIL' => $photo['thumbnail'] ?? '',
+                'ORIGINAL'  => $photo['original'] ?? '',
+            ]);
+        }
     }
 
     public function get_config_text_value($key)
