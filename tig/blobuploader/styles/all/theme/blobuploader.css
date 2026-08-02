@@ -1,0 +1,207 @@
+/*
+ * Blob Uploader — layout only.
+ * Colors, borders, radius, and button look come from the board style
+ * (.panel, .notice, .button, a, .error, .inputbox, etc.).
+ *
+ * This sheet is loaded site-wide via overall_header_head_append.
+ * Scope all rules under extension containers so we never restyle stock
+ * phpBB markup (e.g. dl.thumbnail attachments).
+ */
+
+/* Posting panel: use prosilver .panel / .bg3 on the markup */
+.blobuploader-panel {
+	margin: 5px 0;
+}
+
+.blobuploader-panel > .inner > h3:first-child {
+	margin-top: 0;
+}
+
+/* .notice is used for palette inheritance; drop stock dashed top rule */
+.blobuploader-panel .notice,
+.blobuploader-panel p.blobuploader-explain {
+	border-top: none;
+	margin-top: 0.5em;
+	padding-top: 0.4em;
+}
+
+.blobuploader-panel .blobuploader-selection {
+	margin: 0.5em 0;
+	padding: 0.25em 0;
+}
+
+.blobuploader-panel .blobuploader-selection input[type="file"] {
+	max-width: 100%;
+}
+
+.blobuploader-panel table.blobuploader {
+	width: 100%;
+	max-width: 100%;
+	margin-bottom: 3px;
+	border-collapse: collapse;
+}
+
+/* File list: no private palette — board surfaces win */
+.blobuploader-panel #uploaded-files {
+	box-sizing: border-box;
+	min-width: 150px;
+	max-width: 100%;
+	overflow-y: auto;
+	word-wrap: break-word;
+	overflow-wrap: break-word;
+	padding: 5px 0;
+}
+
+.blobuploader-panel .box-container {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	margin: 0 0 2px 2px;
+	font-family: inherit;
+	font-size: 0.9em;
+	gap: 4px;
+}
+
+.blobuploader-panel .box {
+	padding: 3px;
+	margin-left: 5px;
+	max-width: 100%;
+	word-wrap: break-word;
+	overflow-wrap: break-word;
+	white-space: normal;
+	box-sizing: border-box;
+}
+
+/* Long BBCode / URL lines wrap inside the panel */
+.blobuploader-panel .box-container pre.box {
+	max-width: 100%;
+	white-space: pre-wrap;
+	word-wrap: break-word;
+	overflow-wrap: anywhere;
+	overflow-x: auto;
+	box-sizing: border-box;
+	padding: 2px;
+	margin: 0;
+	font-family: inherit;
+	font-size: inherit;
+}
+
+/* Uploader-only thumbs — never match stock dl.thumbnail attachments */
+.blobuploader-panel .thumbnail td {
+	width: 100px;
+}
+
+.blobuploader-panel .thumbnail,
+.blobuploader-panel img.thumbnail,
+.blobuploader-panel td.thumbnail img {
+	flex-shrink: 0;
+	width: 100px;
+	height: auto;
+	object-fit: contain;
+	margin-bottom: 5px;
+	margin-right: 10px;
+	vertical-align: top;
+}
+
+.blobuploader-panel .loading {
+	width: 100px;
+	height: auto;
+}
+
+.blobuploader-panel .info-cell-container {
+	margin: 0 0 2px 2px;
+	font-family: inherit;
+	font-size: 0.9em;
+}
+
+/* Prefer board .error for failures; keep padding helper */
+.blobuploader-panel .status-message,
+.blobuploader-panel .error-message {
+	padding-left: 5px;
+}
+
+.blobuploader-panel .insert-copy-all-bbcodes,
+.blobuploader-panel p.insert-copy-all-bbcodes {
+	cursor: pointer;
+	margin: 0;
+	padding: 0;
+	line-height: 1.4em;
+	font-size: inherit;
+	text-align: center;
+}
+
+/* Icon size only — link color from board `a` */
+.blobuploader-panel .insert-copy-all-bbcodes .fa,
+.blobuploader-panel .insert-copy-all-bbcodes .icon {
+	font-size: larger;
+}
+
+/* Board .button spacing next to BBCode/URL text */
+.blobuploader-panel .box-container .button {
+	margin-left: 4px;
+	flex-shrink: 0;
+}
+
+.blobuploader-panel .loading-spinner {
+	display: none;
+	text-align: center;
+	margin: 20px auto;
+}
+
+.blobuploader-panel .loading-spinner img {
+	width: 50px;
+	height: 50px;
+}
+
+/* UCP photo gallery — scoped to panel containing #photo-grid */
+#photo-grid.photo-grid,
+.panel #photo-grid.photo-grid {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 5px;
+}
+
+#photo-grid .photo-box {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	margin: 5px;
+}
+
+#photo-grid .photo-box img {
+	width: 200px;
+	height: auto;
+	cursor: pointer;
+}
+
+#photo-grid .copy-container {
+	margin-top: 4px;
+	font-family: inherit;
+	text-align: center;
+}
+
+/* ACP recent gallery */
+#blobuploader-admin-gallery .photo-grid,
+#recent-photos.photo-grid {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 5px;
+}
+
+#blobuploader-admin-gallery .photo-grid img,
+#recent-photos.photo-grid img {
+	width: 100px;
+	height: auto;
+	cursor: pointer;
+}
+
+@media (max-width: 768px) {
+	.blobuploader-panel #uploaded-files dt {
+		flex-direction: column;
+		white-space: normal;
+	}
+
+	.blobuploader-panel .thumbnail {
+		margin-bottom: 10px;
+	}
+}

@@ -33,38 +33,6 @@
 </form>
 
 {% else %}
-<style>
-.photo-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
-}
-
-.photo-box {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin: 5px;
-}
-
-.photo-box img {
-    width: 200px;
-    height: auto;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-.copy-container {
-    margin-top: 0px;
-	font-family: inherit;
-}
-
-.copy-container button {
-    padding: 5px 5px;
-    cursor: pointer;
-}
-</style>
-
 <h2>{{ lang('UCP_BLOBLOADER_PHOTO_GALLERY') }}</h2>
 <div class="panel">
 	<div class="inner">
@@ -76,13 +44,12 @@
 </div>
 
 <script type="module">
-    // Pass maxWidth and maxHeight from server-side to client-side
-    window.blobStoreSASUrl = '{{ BLOBSTORE_SAS_URL }}';
+	window.blobStoreSASUrl = '{{ BLOBSTORE_SAS_URL }}';
 	window.urlBase = '{{ URL_BASE }}';
 	window.userId = '{{ USER_ID }}';
 </script>
 
-<script type="module" src="/ext/tig/blobuploader/styles/prosilver/template/js/ucp_blobuploader_body.js"></script>
+<script type="module" src="{ROOT_PATH}ext/tig/blobuploader/styles/prosilver/template/js/ucp_blobuploader_body.js"></script>
 
 {% endif %}
 

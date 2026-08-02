@@ -10,6 +10,8 @@
 
 namespace tig\blobuploader\controller;
 
+use tig\blobuploader\helpers\RecentPhotos;
+
 /**
  * Blob Uploader ACP controller.
  */
@@ -136,6 +138,23 @@ class acp_controller
 
         $s_errors = !empty($errors);
 
+        // Local-mode gallery: read JSON index; budgeted seed if empty.
+        // Config values are strings — cast so Twig {% if USE_BLOB_SERVICE %} is reliable
+        // (Twig treats the string "0" as truthy).
+        $use_blob = ((int) $this->config['tig_use_blob_service']) === 1;
+        $recent_photos = [];
+        if (!$use_blob)
+        {
+            $recent_photos = RecentPhotos::read();
+            if (empty($recent_photos))
+            {
+                $recent_photos = RecentPhotos::seed_from_filesystem(
+                    $this->config['tig_blobuploader_url_base'],
+                    $this->config['tig_blobuploader_mount_dir']
+                );
+            }
+        }
+
         // Set output variables for display in the template
         $current_explain_text = $this->config_text->get('tig_blobuploader_explain_text', $this->config['tig_blobuploader_explain_text']);
         $this->template->assign_vars([
@@ -148,7 +167,7 @@ class acp_controller
 
             'EXPLAIN_TEXT' => $current_explain_text,
 
-            'USE_BLOB_SERVICE' => $this->config['tig_use_blob_service'],
+            'USE_BLOB_SERVICE' => $use_blob,
             'IMAGEPROCESSOR_FN_URL' => $this->config['tig_imageprocessor_fn_url'],
             'IMAGEPROCESSOR_APPID' => $this->config['tig_imageprocessor_appid'],
 
@@ -164,7 +183,20 @@ class acp_controller
             'SIZED_HEIGHT' => $this->config['tig_blobuploader_sized_height'],
             'THUMBNAIL_WIDTH' => $this->config['tig_blobuploader_thumbnail_width'],
             'THUMBNAIL_HEIGHT' => $this->config['tig_blobuploader_thumbnail_height'],
+
+            // Server-rendered for local mode (avoids Azure list API + JS cache issues)
+            'S_LOCAL_GALLERY' => !$use_blob,
+            'S_HAS_RECENT_PHOTOS' => !empty($recent_photos),
         ]);
+
+        // phpBB block vars are more reliable in ADM Twig than raw arrays
+        foreach ($recent_photos as $photo)
+        {
+            $this->template->assign_block_vars('recent_photos', [
+                'THUMBNAIL' => $photo['thumbnail'] ?? '',
+                'ORIGINAL'  => $photo['original'] ?? '',
+            ]);
+        }
     }
 
     public function get_config_text_value($key)

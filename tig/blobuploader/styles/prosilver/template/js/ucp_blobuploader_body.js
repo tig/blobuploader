@@ -106,7 +106,9 @@ document.addEventListener('DOMContentLoaded', function () {
         container.className = 'copy-container';
 
         const button = document.createElement('button');
-        button.innerHTML = '<i class="copy-button fa fa-clipboard"></i> Copy BBcode';
+        button.type = 'button';
+        button.className = 'button button2';
+        button.innerHTML = '<i class="icon fa-clipboard fa-fw" aria-hidden="true"></i> Copy BBcode';
         button.title = title;
         button.addEventListener('click', (event) => {
             event.preventDefault();

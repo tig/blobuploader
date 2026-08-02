@@ -58,3 +58,11 @@ For this to work with CKEditor, you'll need my mods to that extension which I've
 When **Use Azure Blob Service = on**, the server-side uploader (`blobuploader.php`) resizes the `_sized` and `_thumbnail` images by calling an Azure Function, [blobuploader-imageprocessor](https://github.com/tig/blobuploader-imageprocessor), written in C# using SixLabors.ImageSharp. To use that mode you'll need to set up an Azure account and deploy `blobuploader-imageprocessor`.
 
 You almost certainly don't need it: in the recommended local-filesystem mode (**Use Azure Blob Service = off**) resizing is done on the box with ImageMagick (`processSingleFileLocal`), and the Function is never called.
+
+## Styling
+
+The posting/UCP UI uses stock prosilver structural classes (`.panel`, `.bg3`,
+`.notice`, `.button`, `.button2`, `.inputbox`, `.error`) and a small
+**layout-only** stylesheet (`styles/all/theme/blobuploader.css`). Colors,
+borders, and corner radius come from the board’s active style so child themes
+(and prosilver) apply automatically without extension-specific palettes.

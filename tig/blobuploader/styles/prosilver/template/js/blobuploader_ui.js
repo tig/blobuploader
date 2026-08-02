@@ -175,6 +175,7 @@ function displayUploadedFiles(files, container) {
             // Display error message
             const errorMessage = document.createElement('div');
             errorMessage.classList.add('error-message');
+            errorMessage.classList.add('error');
             errorMessage.classList.add('box-container');
             errorMessage.textContent = 'Error: ' + fileData.error;
             infoCell.appendChild(errorMessage);
@@ -245,10 +246,12 @@ function createFileInfoContainer(content, title, isBBCode = false) {
     return container;
 }
 
-// Create copy button
+// Create copy button (board .button.button2 styling)
 function createCopyButton(text, title) {
     const button = document.createElement('button');
-    button.innerHTML = '<i class="fa fa-clipboard"></i>';
+    button.type = 'button';
+    button.className = 'button button2';
+    button.innerHTML = '<i class="icon fa-clipboard fa-fw" aria-hidden="true"></i>';
     button.title = title;
     button.addEventListener('click', (event) => {
         event.preventDefault();
