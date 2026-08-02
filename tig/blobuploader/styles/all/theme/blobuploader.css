@@ -13,6 +13,14 @@
 	margin-top: 0;
 }
 
+/* .notice is used for palette inheritance; drop stock dashed top rule */
+.blobuploader-panel .notice,
+.blobuploader-panel p.blobuploader-explain {
+	border-top: none;
+	margin-top: 0.5em;
+	padding-top: 0.4em;
+}
+
 .blobuploader-selection {
 	margin: 0.5em 0;
 	padding: 0.25em 0;
