@@ -36,7 +36,7 @@ if (empty($lang) || !is_array($lang))
 
 $lang = array_merge($lang, [
 	// Uploader UI
-	'BLOGUPLOADER_PANEL_TITLE'			=> 'Uploader',
+	'BLOGUPLOADER_PANEL_TITLE'			=> 'Photo Uploader',
 	'BLOBUPLOADER_UPLOADER_PANEL_EXPLAIN' => 'To upload files, either drag and drop images into the editor, or click the Choose Files button to select images to upload.',
 
 	'BLOBUPLOADER_CHOOSE_FILES_EXPLAIN' => 'Click the Choose Files button to select one or more images to upload.',
@@ -59,6 +59,9 @@ $lang = array_merge($lang, [
 	'LOG_ACP_BLOBUPLOADER_SETTINGS'		=> '<strong>Blob Uploader settings updated</strong>',
 
 	'ACP_BLOBUPLOADER_SETTING_SAVED'	=> 'Blob Uploader settings have been saved successfully!',
+
+	'ACP_BLOBUPLOADER_UPLOADER_TITLE' => 'Title',
+    'ACP_BLOBUPLOADER_UPLOADER_TITLE_EXPLAIN' => 'The title of the uploader displayed to users',
 
 	'ACP_BLOBUPLOADER_EXPLAIN_TEXT' => 'Uploader Explaination Text',
     'ACP_BLOBUPLOADER_EXPLAIN_TEXT_EXPLAIN' => 'Text that will be displayed in the uploader explaining policies, etc...',

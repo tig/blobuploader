@@ -68,6 +68,8 @@ class install_data extends \phpbb\db\migration\migration
             ['config.add', ['tig_blobuploader_thumbnail_width', '300']],
             ['config.add', ['tig_blobuploader_thumbnail_height', '300']],
 
+			['config.add', ['tig_blobuploader_title', 'Photo Uploader']],
+
 			// Add a new config_text table setting
 			['config_text.add', ['tig_blobuploader_explain_text', 'Use this uploader to upload images for your posts.']],
 
