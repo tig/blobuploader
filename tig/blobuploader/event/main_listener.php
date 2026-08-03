@@ -103,10 +103,16 @@ class main_listener implements EventSubscriberInterface
     {
         // Retrieve the explain text from config_text
         $explain_text = $this->config_text->get('tig_blobuploader_explain_text', '');
+        $title = $this->config['tig_blobuploader_title'] ?? '';
+        if ($title === '' || $title === null)
+        {
+            $title = $this->language->lang('BLOGUPLOADER_PANEL_TITLE');
+        }
 
-        // Assign the explain text to the template
+        // Assign uploader UI strings to the template
         $this->template->assign_vars([
             'EXPLAIN_TEXT' => $explain_text,
+            'UPLOADER_TITLE' => $title,
         ]);
     }
 

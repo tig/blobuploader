@@ -107,6 +107,7 @@ class acp_controller
                 // Set the options the user configured, using defaults if not provided
 
                 $this->config_text->set('tig_blobuploader_explain_text', $this->request->variable('explain_text', $current_explain_text));
+                $this->config->set('tig_blobuploader_title', $this->request->variable('uploader_title', $this->config['tig_blobuploader_title'] ?? 'Photo Uploader'));
                 $this->config->set('tig_use_blob_service', $this->request->variable('use_blob_service', $this->config['tig_use_blob_service']));
 
                 $this->config->set('tig_imageprocessor_fn_url', $this->request->variable('imageprocessor_fn_url', $this->config['tig_imageprocessor_fn_url']));
@@ -166,6 +167,7 @@ class acp_controller
             //error_log('BLOB_MOUNT_DIRECTORY: ' . $this->config['tig_blobuploader_mount_dir']),
 
             'EXPLAIN_TEXT' => $current_explain_text,
+            'UPLOADER_TITLE' => $this->config['tig_blobuploader_title'] ?? 'Photo Uploader',
 
             'USE_BLOB_SERVICE' => $use_blob,
             'IMAGEPROCESSOR_FN_URL' => $this->config['tig_imageprocessor_fn_url'],
