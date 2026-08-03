@@ -1,0 +1,78 @@
+{% if S_BLOBUPLOADER_PROFILE_GALLERY %}
+<div class="panel bg1 blobuploader-user-gallery blobuploader-profile-gallery">
+	<div class="inner">
+		<h3>{{ lang('PROFILE_BLOBLOADER_PHOTO_GALLERY') }}</h3>
+		<p class="blobuploader-gallery-count">{{ PROFILE_GALLERY_EXPLAIN }}</p>
+		<div id="profile-photo-grid" class="photo-grid blobuploader-photo-grid">
+			{% for photo in loops.profile_photos %}
+				<div class="photo-box">
+					<a class="photo-link" href="{{ photo.ORIGINAL }}" target="_blank" rel="noopener" title="{{ lang('UCP_BLOBLOADER_OPEN_ORIGINAL') }}">
+						<img src="{{ photo.THUMBNAIL }}" alt="" loading="lazy">
+					</a>
+					<div class="copy-container">
+						<button type="button"
+							class="button button2 blobuploader-copy-bbcode"
+							data-original="{{ photo.ORIGINAL }}"
+							data-sized="{{ photo.SIZED }}"
+							title="{{ lang('UCP_BLOBLOADER_COPY_BBCODE') }}">
+							<i class="icon fa-clipboard fa-fw" aria-hidden="true"></i> {{ lang('UCP_BLOBLOADER_COPY_BBCODE') }}
+						</button>
+					</div>
+				</div>
+			{% endfor %}
+		</div>
+	</div>
+</div>
+<script>
+(function () {
+	var grid = document.getElementById('profile-photo-grid');
+	if (!grid) return;
+	var labelCopied = {{ L_COPIED|json_encode|raw }};
+
+	function bbcodeFor(btn) {
+		var original = btn.getAttribute('data-original') || '';
+		var sized = btn.getAttribute('data-sized') || '';
+		return '[url=' + original + ']\n  [img]' + sized + '[/img]\n[/url]';
+	}
+
+	function flashCopied(btn) {
+		var prev = btn.innerHTML;
+		btn.innerHTML = '<i class="icon fa-check fa-fw" aria-hidden="true"></i> ' + labelCopied;
+		btn.disabled = true;
+		setTimeout(function () {
+			btn.innerHTML = prev;
+			btn.disabled = false;
+		}, 1200);
+	}
+
+	grid.addEventListener('click', function (event) {
+		var btn = event.target.closest('.blobuploader-copy-bbcode');
+		if (!btn || !grid.contains(btn)) return;
+		event.preventDefault();
+		var text = bbcodeFor(btn);
+		if (navigator.clipboard && navigator.clipboard.writeText) {
+			navigator.clipboard.writeText(text).then(function () {
+				flashCopied(btn);
+			}).catch(function (err) {
+				console.error('Failed to copy BBCode:', err);
+			});
+		} else {
+			var ta = document.createElement('textarea');
+			ta.value = text;
+			ta.setAttribute('readonly', '');
+			ta.style.position = 'absolute';
+			ta.style.left = '-9999px';
+			document.body.appendChild(ta);
+			ta.select();
+			try {
+				document.execCommand('copy');
+				flashCopied(btn);
+			} catch (e) {
+				console.error('Failed to copy BBCode:', e);
+			}
+			document.body.removeChild(ta);
+		}
+	});
+})();
+</script>
+{% endif %}
