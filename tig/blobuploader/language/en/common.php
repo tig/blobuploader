@@ -47,6 +47,7 @@ $lang = array_merge($lang, [
 	'BLOBUPLOADED_FILES' => 'Uploaded files',
 
     'BLOBUPLOADER_AUTO_INSERT_IMAGES' => 'Auto insert images',
+    'BLOBUPLOADER_LOGIN_REQUIRED' => 'You must be logged in to upload images.',
 
     'BLOBUPLOADER_ORIGINAL_PREFIX' => '_original',
     'BLOBUPLOADER_SIZED_PREFIX' => '_sized',
