@@ -454,6 +454,8 @@ async function uploadSingleFile(file) {
                 };
 
             case 400:
+            case 401:
+            case 403:
 
                 var error = result.error.error;
                 var message = result.error.message.message;

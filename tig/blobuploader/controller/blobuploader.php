@@ -62,6 +62,18 @@ class blobuploader
     {
         $this->startPerfLog('upload', '============= Start upload ==============');
 
+        // Only logged-in, registered members may upload: no guests (ANONYMOUS), no bots.
+        if (empty($this->user->data['is_registered'])
+            || !empty($this->user->data['is_bot'])
+            || (int) $this->user->data['user_id'] === ANONYMOUS
+            || (int) $this->user->data['user_type'] === USER_IGNORE)
+        {
+            $error = $this->language->lang('BLOBUPLOADER_LOGIN_REQUIRED');
+            error_log('Upload rejected: not logged in (user_id ' . (int) $this->user->data['user_id'] . ')');
+            $this->endPerfLog('upload', '============= ' . $error);
+            return $this->errorResponse(['error' => $error, 'message' => ''], 403);
+        }
+
         // Retrieve configuration settings
 
         $use_blob_service = (bool) $this->config['tig_use_blob_service'];
@@ -425,6 +437,18 @@ class blobuploader
                 'response' => '',
                 'error' => $error
             ];
+        }
+
+        foreach (['original', 'sized', 'thumbnail'] as $key) {
+            if (empty($results[$key]) || !is_file($results[$key])) {
+                $error = 'Image processing failed for ' . $file_to_upload['name'] . ': no ' . $key . ' file was written.';
+                $this->endPerfLog('processSingleFileLocal', $error);
+                return [
+                    'status' => 400,
+                    'response' => '',
+                    'error' => $error
+                ];
+            }
         }
 
         $this->endPerfLog('processSingleFileLocal', 'Finished.');
