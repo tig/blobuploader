@@ -36,7 +36,7 @@ if (empty($lang) || !is_array($lang))
 
 $lang = array_merge($lang, [
 	// Uploader UI
-	'BLOGUPLOADER_PANEL_TITLE'			=> 'Uploader',
+	'BLOGUPLOADER_PANEL_TITLE'			=> 'Photo Uploader',
 	'BLOBUPLOADER_UPLOADER_PANEL_EXPLAIN' => 'To upload files, either drag and drop images into the editor, or click the Choose Files button to select images to upload.',
 
 	'BLOBUPLOADER_CHOOSE_FILES_EXPLAIN' => 'Click the Choose Files button to select one or more images to upload.',
@@ -47,6 +47,7 @@ $lang = array_merge($lang, [
 	'BLOBUPLOADED_FILES' => 'Uploaded files',
 
     'BLOBUPLOADER_AUTO_INSERT_IMAGES' => 'Auto insert images',
+    'BLOBUPLOADER_LOGIN_REQUIRED' => 'You must be logged in to upload images.',
 
     'BLOBUPLOADER_ORIGINAL_PREFIX' => '_original',
     'BLOBUPLOADER_SIZED_PREFIX' => '_sized',
@@ -59,6 +60,9 @@ $lang = array_merge($lang, [
 	'LOG_ACP_BLOBUPLOADER_SETTINGS'		=> '<strong>Blob Uploader settings updated</strong>',
 
 	'ACP_BLOBUPLOADER_SETTING_SAVED'	=> 'Blob Uploader settings have been saved successfully!',
+
+	'ACP_BLOBUPLOADER_UPLOADER_TITLE' => 'Title',
+    'ACP_BLOBUPLOADER_UPLOADER_TITLE_EXPLAIN' => 'The title of the uploader displayed to users',
 
 	'ACP_BLOBUPLOADER_EXPLAIN_TEXT' => 'Uploader Explaination Text',
     'ACP_BLOBUPLOADER_EXPLAIN_TEXT_EXPLAIN' => 'Text that will be displayed in the uploader explaining policies, etc...',
@@ -101,6 +105,13 @@ $lang = array_merge($lang, [
 
     'UCP_BLOBLOADER_PHOTO_GALLERY' => 'Photo Gallery',
     'UCP_BLOBLOADER_PHOTO_GALLERY_EXPLAIN' => '%s uploaded images',
+    'UCP_BLOBLOADER_NO_PHOTOS' => 'No uploaded images yet. Photos you upload when posting will appear here.',
+    'UCP_BLOBLOADER_OPEN_ORIGINAL' => 'Open original',
+    'UCP_BLOBLOADER_COPY_BBCODE' => 'Copy BBcode',
+    'UCP_BLOBLOADER_COPIED' => 'Copied!',
+
+    // Profile
+    'PROFILE_BLOBLOADER_PHOTO_GALLERY' => 'Uploaded photos',
 
 
 ]);
