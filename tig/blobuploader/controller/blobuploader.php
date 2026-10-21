@@ -429,7 +429,7 @@ class blobuploader
                 $results = $this->imageProcessor->handleImageProcessing($imagick, $sizes, $user_upload_dir, $image_hash, $ext);
             }
             $imagick->clear();
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $error = 'Image processing failed for ' . $file_to_upload['name'] . ': ' . $e->getMessage();
             $this->endPerfLog('processSingleFileLocal', $error);
             return [

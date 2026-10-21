@@ -33,34 +33,53 @@ class ImageProcessor
             if ($size['width'] <= $width && $size['height'] <= $height) {
                 error_log("Image is already smaller than " . $width . "x" . $height . ", writing without resize.");
                 $imagick->setFirstIterator();
-                $imagick->writeImages($filename, true);
+                if (!$imagick->writeImages($filename, true)) {
+                    throw new \RuntimeException('Failed to write GIF ' . $filename);
+                }
                 $results[$key] = $filename;
                 continue;
             }
 
             // Full-canvas frames. Coalesced per size (not cloned) to keep peak memory down.
             $frames = $imagick->coalesceImages();
+            if (!$frames instanceof \Imagick) {
+                throw new \RuntimeException('GIF coalesce failed');
+            }
 
             // Imagick's thumbnailImage() only touches the current frame, so resize
             // every frame. The third parameter true preserves the aspect ratio.
+            // Page must be the resized frame size, not 0x0: some GIFs keep a stale
+            // virtual canvas after thumbnailImage() and later frames draw off-page.
             foreach ($frames as $frame) {
                 $frame->thumbnailImage($width, $height, true);
-                $frame->setImagePage(0, 0, 0, 0);
+                $frame->setImagePage($frame->getImageWidth(), $frame->getImageHeight(), 0, 0);
             }
 
             // Equivalent of `convert ... -layers optimize`: keep only changed pixels,
             // then map every frame to one shared palette. Without the shared palette
             // the GIF encoder re-quantizes each frame and the write takes 30-40s.
+            // Imagick 3.x returns a new object; the stub/docs type is bool. Handle both
+            // so a true return does not become a PHP 8.3 TypeError on the next call.
             $frames->setFirstIterator();
             $optimized = $frames->optimizeImageLayers();
+            if ($optimized instanceof \Imagick) {
+                $frames->clear();
+                $frames = $optimized;
+            } elseif ($optimized !== true) {
+                $frames->clear();
+                throw new \RuntimeException('GIF layer optimize failed');
+            }
+
+            $frames->setFirstIterator();
+            $frames->optimizeImageTransparency();
+            $frames->setFirstIterator();
+            $frames->quantizeImages(256, \Imagick::COLORSPACE_SRGB, 0, false, false);
+            $frames->setFirstIterator();
+            if (!$frames->writeImages($filename, true)) {
+                $frames->clear();
+                throw new \RuntimeException('Failed to write GIF ' . $filename);
+            }
             $frames->clear();
-            $optimized->setFirstIterator();
-            $optimized->optimizeImageTransparency();
-            $optimized->setFirstIterator();
-            $optimized->quantizeImages(256, \Imagick::COLORSPACE_SRGB, 0, false, false);
-            $optimized->setFirstIterator();
-            $optimized->writeImages($filename, true);
-            $optimized->clear();
             $results[$key] = $filename;
         }
 

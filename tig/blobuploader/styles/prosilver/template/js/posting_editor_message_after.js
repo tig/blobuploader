@@ -446,6 +446,9 @@ async function uploadSingleFile(file) {
         switch (response.status) {
             case 200:
                 console.log('File uploaded successfully:', result);
+                if (!result.original || !result.sized || !result.thumbnail) {
+                    throw new Error('Image processing failed: upload returned empty file URLs.');
+                }
                 return {
                     original: result.original,
                     sized: result.sized,
@@ -457,11 +460,10 @@ async function uploadSingleFile(file) {
             case 401:
             case 403:
 
-                var error = result.error.error;
-                var message = result.error.message.message;
-                if (result.error.message.exception) {
-                    // console.log('Error uploading file - errResult.error.message.exception:', errResult.error.message.exception);
-                    error = error + ' ' + result.error.message.exception;
+                var error = (result.error && result.error.error) || result.error || response.statusText;
+                var messagePayload = result.error && result.error.message;
+                if (messagePayload && typeof messagePayload === 'object' && messagePayload.exception) {
+                    error = error + ' ' + messagePayload.exception;
                 }
 
                 throw new Error(error);
