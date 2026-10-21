@@ -10,8 +10,7 @@
 
 <div class="panel bg3 panel-container blobuploader-panel" id="blobuploader-panel">
 	<div class="inner">
-		<h3>{L_BLOGUPLOADER_PANEL_TITLE}</h3>
-		<p class="notice blobuploader-explain">{EXPLAIN_TEXT}</p>
+		<h3>{UPLOADER_TITLE}</h3>
 		<p class="blobuploader">{L_BLOBUPLOADER_UPLOADER_PANEL_EXPLAIN}</p>
 
 		<div class="blobuploader blobuploader-selection">
@@ -43,6 +42,11 @@
 		<div class="loading-spinner" id="loading-spinner">
 			<img src="{ROOT_PATH}ext/tig/blobuploader/images/roundel.gif" alt="Uploading...">
 		</div>
+
+		{# Policy / explain banner — bottom of uploader (after Choose Files) #}
+		<!-- IF EXPLAIN_TEXT -->
+		<p class="notice blobuploader-explain">{EXPLAIN_TEXT}</p>
+		<!-- ENDIF -->
 	</div>
 </div>
 

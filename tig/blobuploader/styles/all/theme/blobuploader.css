@@ -153,31 +153,76 @@
 	height: 50px;
 }
 
-/* UCP photo gallery — scoped to panel containing #photo-grid */
+/* User photo gallery (UCP + profile) — dense grid + copy BBCode */
+.blobuploader-user-gallery .photo-grid,
+.blobuploader-ucp-gallery #photo-grid.photo-grid,
 #photo-grid.photo-grid,
-.panel #photo-grid.photo-grid {
+#profile-photo-grid.photo-grid {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 5px;
+	gap: 10px 8px;
+	align-items: flex-start;
 }
 
-#photo-grid .photo-box {
+.blobuploader-user-gallery .photo-box,
+.blobuploader-ucp-gallery #photo-grid .photo-box,
+#photo-grid .photo-box,
+#profile-photo-grid .photo-box {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	margin: 5px;
+	margin: 0;
+	width: 110px;
 }
 
-#photo-grid .photo-box img {
-	width: 200px;
+.blobuploader-user-gallery .photo-link,
+.blobuploader-ucp-gallery #photo-grid .photo-link,
+#photo-grid .photo-link,
+#profile-photo-grid .photo-link {
+	display: block;
+	line-height: 0;
+}
+
+.blobuploader-user-gallery .photo-box img,
+.blobuploader-ucp-gallery #photo-grid img,
+#photo-grid.photo-grid img,
+#photo-grid .photo-box img,
+#profile-photo-grid .photo-box img {
+	display: block;
+	width: 100px;
 	height: auto;
 	cursor: pointer;
 }
 
-#photo-grid .copy-container {
+.blobuploader-user-gallery .blobuploader-empty,
+.blobuploader-ucp-gallery .blobuploader-empty {
+	margin: 0.5em 0;
+}
+
+.blobuploader-user-gallery .blobuploader-gallery-count {
+	margin: 0 0 0.75em;
+}
+
+.blobuploader-user-gallery .copy-container,
+#photo-grid .copy-container,
+#profile-photo-grid .copy-container {
 	margin-top: 4px;
 	font-family: inherit;
 	text-align: center;
+	width: 100%;
+}
+
+.blobuploader-user-gallery .copy-container .button,
+#photo-grid .copy-container .button,
+#profile-photo-grid .copy-container .button {
+	font-size: 0.85em;
+	padding: 2px 6px;
+	white-space: nowrap;
+}
+
+/* Profile gallery sits under signature */
+.blobuploader-profile-gallery {
+	margin-top: 0;
 }
 
 /* ACP recent gallery */

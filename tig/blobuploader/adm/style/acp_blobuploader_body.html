@@ -15,7 +15,12 @@
         <legend>{{ lang('SETTINGS') }}</legend>
 
         <dl>
-            <dt><label for="blob_mount_directory">{{ lang('ACP_BLOBUPLOADER_EXPLAIN_TEXT') }}{{ lang('COLON') }}</label><br /><span>{{ lang('ACP_BLOBUPLOADER_EXPLAIN_TEXT_EXPLAIN') }}</span></dt>
+            <dt><label for="uploader_title">{{ lang('ACP_BLOBUPLOADER_UPLOADER_TITLE') }}{{ lang('COLON') }}</label><br /><span>{{ lang('ACP_BLOBUPLOADER_UPLOADER_TITLE_EXPLAIN') }}</span></dt>
+            <dd><input type="text" id="uploader_title" name="uploader_title" value="{{ UPLOADER_TITLE }}" maxlength="255" style="width: 100%;" /></dd>
+        </dl>
+
+        <dl>
+            <dt><label for="explain_text">{{ lang('ACP_BLOBUPLOADER_EXPLAIN_TEXT') }}{{ lang('COLON') }}</label><br /><span>{{ lang('ACP_BLOBUPLOADER_EXPLAIN_TEXT_EXPLAIN') }}</span></dt>
             <dd><textarea type="text" id="explain_text" name="explain_text" value="{{ EXPLAIN_TEXT }}" style="width: 100%; height: 3em;">{{ EXPLAIN_TEXT }}</textarea></dd>
         </dl>
 

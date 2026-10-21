@@ -34,22 +34,103 @@
 
 {% else %}
 <h2>{{ lang('UCP_BLOBLOADER_PHOTO_GALLERY') }}</h2>
-<div class="panel">
+<div class="panel blobuploader-user-gallery blobuploader-ucp-gallery">
 	<div class="inner">
-		<p id="gallery_explain">{{ lang('UCP_BLOBLOADER_PHOTO_GALLERY_EXPLAIN') }}</p>
+		<p id="gallery_explain">{{ GALLERY_EXPLAIN }}</p>
 		<div id="photo-grid" class="photo-grid">
-			<!-- Photos will be dynamically injected here -->
+			{# Local/mount mode: server-rendered from user folder (same idea as ACP recent photos) #}
+			{% if S_LOCAL_GALLERY %}
+				{% if S_HAS_USER_PHOTOS %}
+					{% for photo in loops.user_photos %}
+						<div class="photo-box">
+							<a class="photo-link" href="{{ photo.ORIGINAL }}" target="_blank" rel="noopener" title="{{ lang('UCP_BLOBLOADER_OPEN_ORIGINAL') }}">
+								<img src="{{ photo.THUMBNAIL }}" alt="" loading="lazy">
+							</a>
+							<div class="copy-container">
+								<button type="button"
+									class="button button2 blobuploader-copy-bbcode"
+									data-original="{{ photo.ORIGINAL }}"
+									data-sized="{{ photo.SIZED }}"
+									title="{{ lang('UCP_BLOBLOADER_COPY_BBCODE') }}">
+									<i class="icon fa-clipboard fa-fw" aria-hidden="true"></i> {{ lang('UCP_BLOBLOADER_COPY_BBCODE') }}
+								</button>
+							</div>
+						</div>
+					{% endfor %}
+				{% else %}
+					<p class="blobuploader-empty">{{ lang('UCP_BLOBLOADER_NO_PHOTOS') }}</p>
+				{% endif %}
+			{% endif %}
 		</div>
 	</div>
 </div>
 
-<script type="module">
-	window.blobStoreSASUrl = '{{ BLOBSTORE_SAS_URL }}';
-	window.urlBase = '{{ URL_BASE }}';
-	window.userId = '{{ USER_ID }}';
-</script>
+{% if S_LOCAL_GALLERY and S_HAS_USER_PHOTOS %}
+<script>
+(function () {
+	var grid = document.getElementById('photo-grid');
+	if (!grid) return;
+	var labelCopy = {{ L_COPY_BBCODE|json_encode|raw }};
+	var labelCopied = {{ L_COPIED|json_encode|raw }};
 
-<script type="module" src="{ROOT_PATH}ext/tig/blobuploader/styles/prosilver/template/js/ucp_blobuploader_body.js"></script>
+	function bbcodeFor(btn) {
+		var original = btn.getAttribute('data-original') || '';
+		var sized = btn.getAttribute('data-sized') || '';
+		return '[url=' + original + ']\n  [img]' + sized + '[/img]\n[/url]';
+	}
+
+	function flashCopied(btn) {
+		var prev = btn.innerHTML;
+		btn.innerHTML = '<i class="icon fa-check fa-fw" aria-hidden="true"></i> ' + labelCopied;
+		btn.disabled = true;
+		setTimeout(function () {
+			btn.innerHTML = prev;
+			btn.disabled = false;
+		}, 1200);
+	}
+
+	grid.addEventListener('click', function (event) {
+		var btn = event.target.closest('.blobuploader-copy-bbcode');
+		if (!btn || !grid.contains(btn)) return;
+		event.preventDefault();
+		var text = bbcodeFor(btn);
+		if (navigator.clipboard && navigator.clipboard.writeText) {
+			navigator.clipboard.writeText(text).then(function () {
+				flashCopied(btn);
+			}).catch(function (err) {
+				console.error('Failed to copy BBCode:', err);
+			});
+		} else {
+			// Fallback for older browsers
+			var ta = document.createElement('textarea');
+			ta.value = text;
+			ta.setAttribute('readonly', '');
+			ta.style.position = 'absolute';
+			ta.style.left = '-9999px';
+			document.body.appendChild(ta);
+			ta.select();
+			try {
+				document.execCommand('copy');
+				flashCopied(btn);
+			} catch (e) {
+				console.error('Failed to copy BBCode:', e);
+			}
+			document.body.removeChild(ta);
+		}
+	});
+})();
+</script>
+{% endif %}
+
+{# Azure blob mode only — live site uses local/R2 mount #}
+{% if USE_BLOB_SERVICE %}
+<script>
+window.blobStoreSASUrl = {{ BLOBSTORE_SAS_URL|json_encode|raw }};
+window.urlBase = {{ URL_BASE|json_encode|raw }};
+window.userId = {{ USER_ID|json_encode|raw }};
+</script>
+<script src="{ROOT_PATH}ext/tig/blobuploader/styles/prosilver/template/js/ucp_blobuploader_body.js?v=localfix2"></script>
+{% endif %}
 
 {% endif %}
 
