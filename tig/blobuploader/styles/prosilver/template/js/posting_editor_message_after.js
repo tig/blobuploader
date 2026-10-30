@@ -1,4 +1,5 @@
 import { heicTo, isHeic } from 'heic-to';
+import { isAllowedFileName } from './allowed_extensions.js';
 const { maxWidth, maxHeight } = window.acpSettings;
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -366,7 +367,7 @@ async function resizeImage(file, maxWidth, maxHeight) {
 }
 
 function isAllowedExtension(file) {
-    return window.allowedExtensions.includes(file.name.split('.').pop().toLowerCase());
+    return isAllowedFileName(file && file.name, window.allowedExtensions);
 }
 
 async function convertHeicToJpg(file) {

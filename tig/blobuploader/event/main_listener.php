@@ -109,10 +109,14 @@ class main_listener implements EventSubscriberInterface
             $title = $this->language->lang('BLOGUPLOADER_PANEL_TITLE');
         }
 
-        // Assign uploader UI strings to the template
+        // The uploader panel is included wherever the posting editor renders
+        // (forum posts, PM compose, signature, drafts), not only posting.php.
         $this->template->assign_vars([
             'EXPLAIN_TEXT' => $explain_text,
             'UPLOADER_TITLE' => $title,
+            'ALLOWED_EXTENSIONS' => $this->config['tig_blobuploader_allowed_extensions'],
+            'MAX_ORIGINAL_WIDTH' => $this->config['tig_blobuploader_max_original_width'],
+            'MAX_ORIGINAL_HEIGHT' => $this->config['tig_blobuploader_max_original_height'],
         ]);
     }
 
@@ -139,15 +143,16 @@ class main_listener implements EventSubscriberInterface
 	 */
 	public function set_vars_for_uploader($event){
 
+		// Editor dims/extensions are assigned in on_page_header so PM compose
+		// and the signature editor get them too. Keep the same non-secret
+		// posting.php assignments here. Connection string and Function App ID
+		// are ACP-only; do not expose them on public templates.
 		$this->template->assign_vars([
             'BLOB_MOUNT_DIRECTORY' => $this->config['tig_blobuploader_mount_dir'],
 
 			'USE_BLOB_SERVICE' => $this->config['tig_use_blob_service'],
             'IMAGEPROCESSOR_FN_URL' => $this->config['tig_imageprocessor_fn_url'],
-            'IMAGEPROCESSOR_APPID' => $this->config['tig_imageprocessor_appid'],
 
-            'BLOBSTORE_CONNECTIONSTRING' => $this->config['tig_blobstore_connectionstring'],
-            
             'URL_BASE' => $this->config['tig_blobuploader_url_base'],
 
             'ALLOWED_EXTENSIONS' => $this->config['tig_blobuploader_allowed_extensions'],

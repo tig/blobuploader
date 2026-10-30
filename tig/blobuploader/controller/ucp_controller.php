@@ -103,9 +103,6 @@ class ucp_controller
 
 			'U_UCP_ACTION'	=> $this->u_action,
 
-			'IMAGEPROCESSOR_FN_URL' => $this->config['tig_imageprocessor_fn_url'],
-
-			'BLOBSTORE_CONNECTIONSTRING' => $this->config['tig_blobstore_connectionstring'],
 			'BLOBSTORE_SAS_URL' => $this->config['tig_blobstore_sas_url'],
 			'URL_BASE' => $this->config['tig_blobuploader_url_base'],
 
